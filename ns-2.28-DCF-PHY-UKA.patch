@@ -1,0 +1,1071 @@
+diff -Naur ns-allinone-2.28-orig/ns-2.28/mac/mac-802_11.cc ns-allinone-2.28/ns-2.28/mac/mac-802_11.cc
+--- ns-allinone-2.28-orig/ns-2.28/mac/mac-802_11.cc	2006-02-09 14:05:26.000000000 +0100
++++ ns-allinone-2.28/ns-2.28/mac/mac-802_11.cc	2006-02-09 14:04:35.000000000 +0100
+@@ -81,7 +81,21 @@
+ Mac802_11::checkBackoffTimer()
+ {
+ 	if(is_idle() && mhBackoff_.paused())
+-		mhBackoff_.resume(phymib_.getDIFS());
++		// BUGFIX UKA: EIFS
++		// When the channel becomes free again the station will have
++        // to back off with DIFS or EIFS period depending on the
++        // last received packet
++
++        // old implementation
++		// mhBackoff_.resume(phymib_.getDIFS());
++         
++        // new implementation
++		if (last_packet_correct_ == true)
++			mhBackoff_.resume(phymib_.getDIFS());
++        else
++            mhBackoff_.resume(phymib_.getEIFS());
++		// BUGFIX UKA END: EIFS
++
+ 	if(! is_idle() && mhBackoff_.busy() && ! mhBackoff_.paused())
+ 		mhBackoff_.pause();
+ }
+@@ -107,7 +121,22 @@
+ 		assert(dh->dh_fc.fc_subtype == MAC_Subtype_ACK);
+ 		assert(pktRx_);
+ 		struct hdr_cmn *ch = HDR_CMN(pktRx_);
+-		ch->error() = 1;        /* force packet discard */
++
++	    // BUGFIX UKA: TxRxError
++        // If a station transmits it cannot sense and thus not receive
++        // packets at the same time physically. In the original simulator 
++        // however such a packet is "received", marked errornous, discarded
++        // and an EIFS period follows.
++        // This however should not happen, because the packet is not sensed.
++        // Therefore the packet that is received is marked special and handled
++        // correctly after complete "reception" (handle it as "never sensed")
++		
++        // old implementation
++        //ch->error() = 1;        /* force packet discard */
++        
++        // new implementation
++    ch->error() = TX_RX_ERROR;
++    // BUGFIX UKA END: TxRxError
+ 	}
+ 
+ 	/*
+@@ -168,6 +197,13 @@
+ 	parent->bind("PreambleLength_", &PreambleLength);
+ 	parent->bind("PLCPHeaderLength_", &PLCPHeaderLength);
+ 	parent->bind_bw("PLCPDataRate_", &PLCPDataRate);
++
++    // BUGFIX UKA: capture
++    // bind variable 
++    // Set newchipset_ to false for classical chipset behavior
++    // Set to true for improved capture support.
++    parent->bind_bool("newchipset_", &newchipset);
++    // BUGFIX UKA END: capture
+ }
+ 
+ MAC_MIB::MAC_MIB(Mac802_11 *parent)
+@@ -206,6 +242,16 @@
+ 	cache_ = 0;
+ 	cache_node_count_ = 0;
+ 	
++    // BUGFIX UKA: capture
++    // saves the point of time of the start of the last packet reception
++    time_start_pktRx_= 0.0;
++    // BUGFIX UKA END: capture
++
++    // BUGFIX UKA: EIFS
++    // On initialization the last received packet is assumed as correct.
++    last_packet_correct_ = true;
++    // BUGFIX UKA END: EIFS
++
+ 	// chk if basic/data rates are set
+ 	// otherwise use bandwidth_ as default;
+ 	
+@@ -408,6 +454,45 @@
+ 	return 1;
+ }
+ 
++// BUGFIX UKA: EIFS
++// Two new functions for setting and resetting EIFS state
++
++// Set_eifs: This method is called after an errornous packet
++// reception, It sets last_packet_correct to false and
++// starts the defer timer if backoff is not already running 
++// (in that case, the backoff timer cares about EIFS on
++// resume (see checkbackofftimer()).
++
++inline void
++Mac802_11::set_eifs() {
++last_packet_correct_ = false;
++if (mhBackoff_.busy() == false)  {
++    mhDefer_.start(phymib_.getEIFS());
++}
++
++}
++
++// reset_eifs: If the station starts receiving a packet, reset_eifs is
++// called. It checks if the station is in the EIFS period and if this is
++// done by defer timer. If this is the case the defer timer is stopped. If
++// there are packets to send then the station will initialize a backoff
++// period (if not already running), that is directly paused until the 
++// medium is idle again.
++
++inline void
++Mac802_11::reset_eifs()
++{
++if (last_packet_correct_ == false && mhDefer_.busy() == true) {
++    mhDefer_.stop();
++    if (mhBackoff_.busy() == false && (pktRTS_ || pktTx_)) {
++        mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++
++    }
++}
++}
++
++// BUGFIX UKA END: EIFS
++
+ void
+ Mac802_11::discard(Packet *p, const char* why)
+ {
+@@ -473,12 +558,51 @@
+ void
+ Mac802_11::capture(Packet *p)
+ {
+-	/*
+-	 * Update the NAV so that this does not screw
+-	 * up carrier sense.
+-	 */	
+-	set_nav(usec(phymib_.getEIFS() + txtime(p)));
+-	Packet::free(p);
++// BUGFIX UKA: capture, EIFS
++// Changes concerning capture effect:
++// - Packets that are discarded because of the capture effect are 
++//   mentioned in  the trace
++// - A new version of the chipset implementation that handles an 
++//   "extended capture effect" is implemented
++// Changes concerning EIFS handling:
++// - NAV is not used for EIFS handling anymore; replace by mechnism
++//   using last_packet_correct_ variable and defer/backoff timers
++
++// old implementation
++
++/*
++ * Update the NAV so that this does not screw
++ * up carrier sense.
++ */
++// set_nav(usec(phymib_.getEIFS() + txtime(p)));
++// Packet::free(p);
++
++// new implementation
++
++last_packet_correct_ = false;
++
++if (phymib_.get_newchipset() == false) {
++    // handle the classical capture effect (new chipset feature is not used)
++    discard(p, DROP_MAC_CAPTURE);
++} else {
++// handle capture effect if (new chipset feature used)
++
++    if (pktRx_->txinfo_.RxPr > p->txinfo_.RxPr){
++        // RxPr first packet > RxPr second packet 
++        // (power difference a priori big enough, otherwise capture is not called)
++        // => continue receive packet 1, discard packet 2
++        discard(p,DROP_MAC_CAPTURE);
++    } else {
++        // RxPr first packet < RxPr second packet 
++        // (power difference a priori big enough, otherwise capture is not called)
++        // => stop receive packet 1 and discard, receive packet 2 from now on
++        mhRecv_.stop();                     // receive timer for packet 1 stopped
++        mhRecv_.start(txtime(p));           // start receive timer for packet 2
++        discard(pktRx_, DROP_MAC_CAPTURE);  // discard packet 1
++        pktRx_ = p;                         // make packet 2 the one that is received now
++    }
++}
++// BUGFIX UKA END: capture, EIFS
+ }
+ 
+ void
+@@ -497,6 +621,13 @@
+ 		 *  "last" the longest.  Make this packet,
+ 		 *  pktRx_ and reset the Recv Timer if necessary.
+ 		 */
++
++    // BUGFIX UKA: EIFS
++    // A collision implies reception of an errornous packet
++    // set the last_packet_correct_ variable to false
++     last_packet_correct_ = false;
++    // BUGFIX UKA END: EIFS
++
+ 		if(txtime(p) > mhRecv_.expire()) {
+ 			mhRecv_.stop();
+ 			discard(pktRx_, DROP_MAC_COLLISION);
+@@ -526,8 +657,20 @@
+ 		mhDefer_.start(phymib_.getSIFS());
+ 	} else if(pktRTS_) {
+ 		if (mhBackoff_.busy() == 0) {
+-			rTime = (Random::random() % cw_) * phymib_.getSlotTime();
+-			mhDefer_.start( phymib_.getDIFS() + rTime);
++        // BUGFIX UKA: transmission 
++        //
++        // Do backoff period using the (interruptable) backoff timer, not
++        // the (non-interruptable) defer timer
++        
++        // old implementation
++        
++        //rTime = (Random::random() % cw_) * phymib_.getSlotTime();
++        //mhDefer_.start( phymib_.getDIFS() + rTime);
++        
++        // new implementation
++        
++        mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++        //BUGFIX UKA END: transmission 
+ 		}
+ 	} else if(pktTx_) {
+ 		if (mhBackoff_.busy() == 0) {
+@@ -536,9 +679,21 @@
+ 			
+ 			if ((u_int32_t) ch->size() < macmib_.getRTSThreshold()
+ 			    || (u_int32_t) ETHER_ADDR(mh->dh_ra) == MAC_BROADCAST) {
+-				rTime = (Random::random() % cw_)
+-					* phymib_.getSlotTime();
+-				mhDefer_.start(phymib_.getDIFS() + rTime);
++            // BUGFIX UKA: transmission 
++            //
++            // Do backoff period using the (interruptable) backoff timer,
++            // not the (non-interruptable) defer timer
++
++            // old implementation
++        
++            // rTime = (Random::random() % cw_)
++            //	* phymib_.getSlotTime();
++            // mhDefer_.start(phymib_.getDIFS() + rTime);
++            
++            // new implementation
++            
++            mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++            // BUGFIX UKA END: transmission 
+                         } else {
+ 				mhDefer_.start(phymib_.getSIFS());
+                         }
+@@ -581,7 +736,21 @@
+ void
+ Mac802_11::deferHandler()
+ {
+-	assert(pktCTRL_ || pktRTS_ || pktTx_);
++// BUGFIX UKA: EIFS
++
++// Defer timer is also used for EIFS handling now. This method is called at
++// the end of a complete EIFS. The assertion needs to be extended and the 
++// last_packet_correct_ variable has to be reset.
++
++// old implementation
++
++// assert(pktCTRL_ || pktRTS_ || pktTx_);
++
++// new implementation
++
++assert(pktCTRL_ || pktRTS_ || pktTx_ || last_packet_correct_ == false);
++last_packet_correct_ = true;
++// BUGFIX UKA END: EIFS
+ 
+ 	if(check_pktCTRL() == 0)
+ 		return;
+@@ -595,8 +764,19 @@
+ void
+ Mac802_11::navHandler()
+ {
+-	if(is_idle() && mhBackoff_.paused())
+-		mhBackoff_.resume(phymib_.getDIFS());
++// BUGFIX UKA: NAV 
++// If NAV finishes, paused backoff timers have to be resumed.
++// Use the appropriate method instead of an individual solution here.
++
++// old implementation
++
++// if(is_idle() && mhBackoff_.paused())
++// mhBackoff_.resume(phymib_.getDIFS());
++
++// new implementation
++
++checkBackoffTimer();
++// BUGFIX UKA END: NAV
+ }
+ 
+ void
+@@ -740,8 +920,26 @@
+  	switch(mh->dh_fc.fc_subtype) {
+ 	case MAC_Subtype_RTS:
+ 		if(! is_idle()) {
+-			inc_cw();
+-			mhBackoff_.start(cw_, is_idle());
++			// BUGFIX UKA: transmission 
++            // The contention window should only be increased before retransmit
++            // (see Standard spec. section 9.2.4)
++            
++            // old implementation
++            
++            // inc_cw();
++            // BUGFIX UKA END: transmission
++            
++            // BUGFIX UKA: EIFS
++            // changed method definition for backoff start causes changed call
++            
++            // old implementation
++             
++			// mhBackoff_.start(cw_, is_idle());
++            
++            // new implementation
++             
++			mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++            // BUGFIX UKA END: EIFS
+ 			return 0;
+ 		}
+ 		setTxState(MAC_RTS);
+@@ -778,8 +976,27 @@
+ 	case MAC_Subtype_Data:
+ 		if(! is_idle()) {
+ 			sendRTS(ETHER_ADDR(mh->dh_ra));
+-			inc_cw();
+-			mhBackoff_.start(cw_, is_idle());
++			// BUGFIX UKA: transmission 
++            // The contention window should only be increased before retransmit
++            // (see Standard spec. section 9.2.4)
++            
++            // old implementation
++            
++            // inc_cw();
++            // BUGFIX UKA END: transmission 
++            
++            // BUGFIX UKA: EIFS
++            // changed method definition for backoff start causes changed call
++            
++            // old implementation
++             
++			// mhBackoff_.start(cw_, is_idle());
++            
++            // new implementation
++             
++			mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++            // BUGFIX UKA END: EIFS
++			
+ 			return 0;
+ 		}
+ 		setTxState(MAC_SEND);
+@@ -1001,6 +1218,51 @@
+ /* ======================================================================
+    Retransmission Routines
+    ====================================================================== */
++
++// BUGFIX UKA: EIFS
++//
++// The new implementation of EIFS causes a more complicated retransmission 
++// handling. Depending on the expiration time of EIFS backoff timers have to 
++// be initialized with different waiting times. Since this functionality
++// is needed at severeal places in the RetransmitRTS and RetransmitDATA 
++// methods, it is expoerted to an own method, StartRetransmitBackoff.
++
++void
++Mac802_11::StartRetransmitBackoff()
++{
++    // Set tx state to idle first so that the correct waiting time is used.
++    // This is VERY dirty, but if the medium is not idle here, we would never start
++    // e.g. with expire time of defer handler, but it would always be paused directly
++    // and on resume, DIFS or EIFS is chosen.
++    // 
++    // This call does not change anything, because after leaving this method, we
++    // leave RestransmitRTS/DATA, and then, this call comes in send_timer in every
++    // case, where tx state would be set to idle.
++    setTxState(MAC_IDLE);
++
++    if (last_packet_correct_ == false && mhDefer_.busy()) {
++    	// defer is running because of EIFS => stop defering, start backoff
++        if (mhDefer_.expire() < phymib_.getDIFS()) {
++            // time until defer expires is shorter than DIFS => start BO with DIFS
++            mhDefer_.stop();
++            mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++        } else {
++            // time until defer expires is greater than DIFS => wait rest of defer
++	        // (complete EIFS) and do backoff slots then
++            mhBackoff_.start(cw_, is_idle(), mhDefer_.expire());
++            mhDefer_.stop();
++        }
++     } else {
++        // no defer running; just start backoff
++        if (mhBackoff_.busy() == false) {
++            mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++        }
++    }
++}
++
++// BUGFIX UKA END:EIFS
++
++
+ void
+ Mac802_11::RetransmitRTS()
+ {
+@@ -1038,8 +1300,27 @@
+ 		rf->rf_fc.fc_retry = 1;
+ 
+ 		inc_cw();
+-		mhBackoff_.start(cw_, is_idle());
+-	}
++		// BUGFIX UKA: EIFS
++		// call StartRetransmitBackoff instead of directly starting backoff
++		// This is now done at the end of this method.
++
++        // old implementation
++         
++		// mhBackoff_.start(cw_, is_idle());
++		// BUGFIX UKA END: EIFS
++	}
++    
++	// BUGFIX UKA: transmission, EIFS
++	// transmission: backoff is started here, because it has to be done in every
++	// case and not only in case of not reaching the limit.
++	// EIFS: backoff is not started directly but uses StartRetransmitBackoff 
++    // method.
++
++    // new implementation
++
++    StartRetransmitBackoff();
++	// BUGFIX UKA END: transmission, EIFS
++
+ }
+ 
+ void
+@@ -1048,7 +1329,15 @@
+ 	struct hdr_cmn *ch;
+ 	struct hdr_mac802_11 *mh;
+ 	u_int32_t *rcount, thresh;
+-	assert(mhBackoff_.busy() == 0);
++	
++    // BUGFIX UKA: EIFS
++    // This assertion is not always valid, the BO timer might already be 
++    // running after an EIFS period
++    
++    // old implementation
++    
++    // assert(mhBackoff_.busy() == 0);
++    // BUGFIX UKA END: EIFS
+ 
+ 	assert(pktTx_);
+ 	assert(pktRTS_ == 0);
+@@ -1064,11 +1353,28 @@
+ 		Packet::free(pktTx_); 
+ 		pktTx_ = 0;
+ 
+-		/*
++        // BUGFIX UKA: transmission 
++        // After sending a packet with a group address, both the short and 
++        // long retry counter should be reset (see Standard 9.2.4)
++        ssrc_ = 0;
++        slrc_ = 0;
++        // BUGFIX UKA END: transmission
++
++        /*
+ 		 * Backoff at end of TX.
+ 		 */
+ 		rst_cw();
+-		mhBackoff_.start(cw_, is_idle());
++		// BUGFIX UKA: EIFS
++		// Call StartRetransmitBackoff instead of directly starting backoff
++
++        // old implementation
++
++		// mhBackoff_.start(cw_, is_idle());
++    
++        // new implementation
++
++		StartRetransmitBackoff();
++		// BUGFIX UKA END: EIFS
+ 
+ 		return;
+ 	}
+@@ -1112,8 +1418,26 @@
+ 
+ 		sendRTS(ETHER_ADDR(mh->dh_ra));
+ 		inc_cw();
+-		mhBackoff_.start(cw_, is_idle());
+-	}
++		// BUGFIX UKA: EIFS
++		// Call StartRetransmitBackoff at the ned of the method instead of 
++        // directly starting backoff
++
++        // old implementation
++
++		// mhBackoff_.start(cw_, is_idle());
++		// BUGFIX UKA END: EIFS
++	}
++    
++	// BUGFIX UKA: transmission, EIFS
++	// transmission: backoff is started here, because it has to be done in every
++	// case and not only in case of not reaching the limit.
++	// EIFS: backoff is not started directly but uses StartRetransmitBackoff 
++    // method.
++
++    // new implementation
++
++    StartRetransmitBackoff();
++	// BUGFIX UKA END: transmission, EIFS
+ }
+ 
+ /* ======================================================================
+@@ -1151,16 +1475,57 @@
+ 				 * If we are already deferring, there is no
+ 				 * need to reset the Defer timer.
+ 				 */
+-				rTime = (Random::random() % cw_)
+-					* (phymib_.getSlotTime());
+-				mhDefer_.start(phymib_.getDIFS() + rTime);
++				// BUGFIX UKA: transmission 
++				// The station must defer only for DIFS if the medium is free
++                // and the is no backoff or defer runnning
++                
++                // old implementation
++                 
++				// rTime = (Random::random() % cw_)
++				// 	* (phymib_.getSlotTime());
++				// mhDefer_.start(phymib_.getDIFS() + rTime);
++                
++                // new implementation
++                
++				mhDefer_.start(phymib_.getDIFS() );
++				// BUGFIX UKA END: transmission
++
++			}
++			// BUGFIX UKA: EIFS
++			// support of EIFS causes new situations at packet sending as well
++            // If the last packet was not correct and defer is running and the
++            // medium is free, defer runs in an EIFS period. If now the time
++            // until expiration is smaller than DIFS, it is necessary to wait
++            // at least for an additional period of DIFS before sending.
++            
++            // new implementation
++			
++            else {
++				if (last_packet_correct_ == false && mhDefer_.expire() < phymib_.getDIFS()) {
++					// Defer runs because of EIFS and expiration
++					// time is shorter than DIFS
++					// => defer for DIFS again
++					mhDefer_.stop();
++					mhDefer_.start(phymib_.getDIFS());
++				}
+ 			}
++			// BUGFIX UKA END: EIFS
+ 		} else {
+ 			/*
+ 			 * If the medium is NOT IDLE, then we start
+ 			 * the backoff timer.
+ 			 */
+-			mhBackoff_.start(cw_, is_idle());
++            // BUGFIX UKA: EIFS
++            // method call for backoff start changed
++            
++            // old implementation
++             
++            // mhBackoff_.start(cw_, is_idle());
++            
++            // new implementation
++            
++			mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++            // BUGFIX UKA END: EIFS
+ 		}
+ 	}
+ }
+@@ -1196,9 +1561,35 @@
+ 	 *  proceed.  Just set the error flag in the common header
+ 	 *  to that the packet gets thrown away.
+ 	 */
+-	if(tx_active_ && hdr->error() == 0) {
+-		hdr->error() = 1;
+-	}
++	// BUGFIX UKA: TxRxError
++    // packets at the same time physically. In the original simulator 
++    // however such a packet is "received", marked errornous, discarded
++    // and an EIFS period follows.
++    // This however should not happen, because the packet is not sensed.
++    // Therefore the packet that is received is marked special and handled
++    // correctly after complete "reception" (handle it as "never sensed")
++    
++    // old implementation
++
++	//if(tx_active_ && hdr->error() == 0) {
++	//	hdr->error() = 1;
++	// }
++    
++    // new implementation
++    
++	if (tx_active_) {
++	 	hdr->error() = TX_RX_ERROR;
++	}
++	// BUGFIX UKA END: TxRxError
++
++	// BUGFIX UKA: EIFS
++    // on receiving a packet, a running EIFS period is stopped
++
++    // new implementation
++    
++	reset_eifs();
++	// BUGFIX UKA END: EIFS
++
+ 
+ 	if(rx_state_ == MAC_IDLE) {
+ 		setRxState(MAC_RECV);
+@@ -1208,17 +1599,70 @@
+ 		 * txtime seconds.
+ 		 */
+ 		mhRecv_.start(txtime(p));
+-	} else {
++        // BUGFIX UKA: capture
++        // The starting time of packet reception has to be stored to make sure
++        // the capture mechanism is simulated correctly. The new capture
++        // effect does not work if the starting time of the second packet 
++        // reception is in the interval between 4 and 10ms after the start of 
++        // the first reception.
++
++        // new implementation
++        
++		time_start_pktRx_ = Scheduler::instance().clock();
++		// BUGFIX UKA END: capture
++	
++    } else {
+ 		/*
+ 		 *  If the power of the incoming packet is smaller than the
+ 		 *  power of the packet currently being received by at least
+                  *  the capture threshold, then we ignore the new packet.
+ 		 */
+-		if(pktRx_->txinfo_.RxPr / p->txinfo_.RxPr >= p->txinfo_.CPThresh) {
+-			capture(p);
++        // BUGFIX UKA: capture
++        // Also support the new capture effect (can be activated and
++        // deactivated using the tcl variable newchipset_). In case of 
++        // activation a capture is also possible if the packet arriving
++        // later has a higher power of reception and does not reach the
++        // receiver within an interval of 4 to 10ms after start of reception
++        // of the first packet due to synchronization constraints.
++
++        // old implementation
++        
++        /*
++    		if(pktRx_->txinfo_.RxPr / p->txinfo_.RxPr >= p->txinfo_.CPThresh) {
++	    		capture(p);
++		    } else {
++			    collision(p);
++		    }
++        */
++
++        // new implementation
++        
++        // store current time and capture threshold 
++        // (given in dB; transform to a factor)
++		double now = Scheduler::instance().clock();
++    	double Threshold = pow(10,p->txinfo_.CPThresh/10);
++        if (phymib_.get_newchipset() == false) {
++            // classic chipset, capture only possible if first packet is stronger
++	    	if(pktRx_->txinfo_.RxPr / p->txinfo_.RxPr >= Threshold) {
++				capture(p);
++			} else {
++				collision(p);
++			}
+ 		} else {
+-			collision(p);
+-		}
++		    // improved chipset
++			if (pktRx_->txinfo_.RxPr / p->txinfo_.RxPr >= Threshold){
++				capture(p);
++			} else if ((p->txinfo_.RxPr / pktRx_->txinfo_.RxPr >= Threshold )&&
++				   ((time_start_pktRx_ + 4e-6 > now)||(time_start_pktRx_ + 10e-6 < now))) {
++				   // in case that second packet is stronger, check if
++                   // sychronization is possible
++				capture(p);
++				time_start_pktRx_ = now;
++			} else {
++				collision(p);
++			}
++        }
++        // BUGFIX UKA END: capture
+ 	}
+ }
+ 
+@@ -1241,17 +1685,44 @@
+          *  "arrives", then I would never have seen it and should
+          *  do a silent discard without adjusting the NAV.
+          */
+-        if(tx_active_) {
+-                Packet::free(pktRx_);
+-                goto done;
+-        }
++	// BUGFIX UKA: TxRxError
++    // Discard a packet that reaches the station during a transmission.
++    // The packet could technically not be received, however it is 
++    // possible in simulation. Therefore, such packets are marked
++    // special and just ignored after complete "reception".
++    
++    // old implementation
++    
++    //if(tx_active_) {
++    //        Packet::free(pktRx_);
++    //        goto done;
++    //}
++    
++    // new implementation
++	
++    if(tx_active_ || ch->error() == TX_RX_ERROR) {
++		Packet::free(pktRx_);
++		goto done;
++     	}
++	// BUGFIX UKA END: TxRxError
+ 
+ 	/*
+ 	 * Handle collisions.
+ 	 */
+ 	if(rx_state_ == MAC_COLL) {
+ 		discard(pktRx_, DROP_MAC_COLLISION);		
+-		set_nav(usec(phymib_.getEIFS()));
++		// BUGFIX UKA: EIFS
++		// Start an EIFS period instead of the NAV timer by calling set_eifs
++
++        // old implementation
++        
++		// set_nav(usec(phymib_.getEIFS()));
++		
++        // new implementation
++        
++		set_eifs();
++		// BUGFIX UKA END: EIFS
++        
+ 		goto done;
+ 	}
+ 
+@@ -1263,10 +1734,30 @@
+ 	 */
+ 	if( ch->error() ) {
+ 		Packet::free(pktRx_);
+-		set_nav(usec(phymib_.getEIFS()));
++        // BUGFIX UKA: EIFS
++		// Start an EIFS period instead of the NAV timer by calling set_eifs
++
++        // old implementation
++        
++		// set_nav(usec(phymib_.getEIFS()));
++		
++        // new implementation
++        
++		set_eifs();
++		// BUGFIX UKA END: EIFS
++		
+ 		goto done;
+ 	}
+ 
++	// BUGFIX UKA: EIFS
++	// At this point it is sure that an error-free packet is received. 
++    // Remember this fact.
++	
++    // new implementation
++    
++    last_packet_correct_ = true;
++	// BUGFIX UKA END: EIFS
++
+ 	/*
+ 	 * IEEE 802.11 specs, section 9.2.5.6
+ 	 *	- update the NAV (Network Allocation Vector)
+@@ -1324,6 +1815,17 @@
+ 				subtype);
+ 			exit(1);
+ 		}
++
++        // BUGFIX UKA: Memory 
++        // The memory used by MAC Control packets should be freed if packets 
++        // are received and not used anymore This step was missing in the
++        // original implementation.
++        
++        // new implementation
++        
++        Packet::free(pktRx_);
++        // BUGFIX UKA END: Memory
++        
+ 		break;
+ 	case MAC_Type_Data:
+ 		switch(subtype) {
+@@ -1480,8 +1982,28 @@
+ 				return;
+ 			}
+ 			sendACK(src);
+-			if(mhSend_.busy() == 0)
+-				tx_resume();
++            // BUGFIX UKA: transmission 
++            // An ACK packet should be sent in every case directly after a SIFS 
++            // period, even if there is a timeout pending 
++            // (See 9.2.8 in the Standard)
++            
++            // old implementation
++            
++            // if(mhSend_.busy() == 0)
++			//  tx_resume();
++            
++            // new implementation
++            
++            if (mhSend_.busy() == 0) {
++                tx_resume();
++            } else {
++                // the station is waiting for a timeout. Stop waiting and 
++                // schedule a retransmit (done by sendHandler). tx_resume 
++                // to send the ACK is called from within sendHandler!
++                mhSend_.stop();
++                sendHandler();
++            }
++            // BUGFIX UKA END: transmission 
+ 		}
+ 	}
+ 	
+@@ -1588,7 +2110,17 @@
+ 	 * Backoff before sending again.
+ 	 */
+ 	assert(mhBackoff_.busy() == 0);
+-	mhBackoff_.start(cw_, is_idle());
++    // BUGFIX UKA: EIFS
++    // changed method definition for backoff start causes changed call
++            
++    // old implementation
++             
++    // Backoff_.start(cw_, is_idle());
++            
++    // new implementation
++             
++    mhBackoff_.start(cw_, is_idle(), phymib_.getDIFS());
++    // BUGFIX UKA END: EIFS
+ 
+ 	tx_resume();
+ 
+diff -Naur ns-allinone-2.28-orig/ns-2.28/mac/mac-802_11.h ns-allinone-2.28/ns-2.28/mac/mac-802_11.h
+--- ns-allinone-2.28-orig/ns-2.28/mac/mac-802_11.h	2006-02-08 15:25:07.000000000 +0100
++++ ns-allinone-2.28/ns-2.28/mac/mac-802_11.h	2006-02-07 11:32:59.000000000 +0100
+@@ -168,6 +168,17 @@
+ 	inline u_int32_t getACKlen() {
+ 		return(getPLCPhdrLen() + sizeof(struct ack_frame));
+ 	}
++    
++    // BUGFIX UKA: capture
++    // returns true if the new implementation of the chipset is supported, 
++    // otherwise false
++    
++    // new implementation
++    
++    inline bool get_newchipset() {
++        return newchipset;
++    }
++    // BUGFIX UKA END: capture
+ 
+  private:
+ 
+@@ -181,6 +192,14 @@
+ 	u_int32_t	PreambleLength;
+ 	u_int32_t	PLCPHeaderLength;
+ 	double		PLCPDataRate;
++    
++    // BUGFIX UKA: capture
++    // true if new chipset implementation is used, false otherwise
++    
++    // new implementation
++    
++    int newchipset;     
++    // BUGFIX UKA END: capture
+ };
+ 
+ 
+@@ -226,6 +245,17 @@
+ /* ======================================================================
+    The actual 802.11 MAC class.
+    ====================================================================== */
++
++// BUGFIX UKA: TxRxError
++// Define a specific value to mark packets that are not really received
++// because of the RxTxError
++
++// new implementation
++
++#define TX_RX_ERROR 5
++// BUGFIX UKA END: TxRxError
++
++
+ class Mac802_11 : public Mac {
+ 	friend class DeferTimer;
+ 
+@@ -276,7 +306,16 @@
+ 	void	sendCTS(int dst, double duration);
+ 	void	sendACK(int dst);
+ 	void	sendDATA(Packet *p);
+-	void	RetransmitRTS();
++
++	// BUGFIX UKA: EIFS
++	// definition of new method
++    
++    // new implementation
++    
++	void	StartRetransmitBackoff();
++	// BUGFIX UKA END: EIFS
++	
++    void	RetransmitRTS();
+ 	void	RetransmitDATA();
+ 
+ 	/*
+@@ -320,6 +359,14 @@
+ 	inline void setRxState(MacState newState);
+ 	inline void setTxState(MacState newState);
+ 
++	// BUGFIX UKA: EIFS
++	// declaration of methods to set and reset EIFS
++    
++    // new implementation
++    
++	inline void set_eifs();
++	inline void reset_eifs();
++	// BUGFIX UKA END: EIFS
+ 
+ 	inline void inc_cw() {
+ 		cw_ = (cw_ << 1) + 1;
+@@ -377,7 +424,23 @@
+ 	   ============================================================ */
+ 	double		nav_;		// Network Allocation Vector
+ 
+-	MacState	rx_state_;	// incoming state (MAC_RECV or MAC_IDLE)
++	// BUGFIX UKA: EIFS
++	// variable that remembers if the last received packet was error-free
++    
++    // new implementation
++    
++	int		last_packet_correct_;
++	// BUGFIX UKA END: EIFS
++
++	// BUGFIX UKA: CAPTURE
++    // Variable saving the time of reception start
++    
++    // new implementation
++    
++	double time_start_pktRx_;
++	// BUGFIX UKA END: CAPTURE
++	
++    MacState	rx_state_;	// incoming state (MAC_RECV or MAC_IDLE)
+ 	MacState	tx_state_;	// outgoint state
+ 	int		tx_active_;	// transmitter is ACTIVE
+ 
+diff -Naur ns-allinone-2.28-orig/ns-2.28/mac/mac-timers.cc ns-allinone-2.28/ns-2.28/mac/mac-timers.cc
+--- ns-allinone-2.28-orig/ns-2.28/mac/mac-timers.cc	2006-02-08 15:25:07.000000000 +0100
++++ ns-allinone-2.28/ns-2.28/mac/mac-timers.cc	2006-02-07 11:32:59.000000000 +0100
+@@ -221,8 +221,23 @@
+ 	mac->backoffHandler();
+ }
+ 
++// BUGFIX UKA: EIFS
++// New additional parameter for this method, specifing the time the backoff 
++// process should wait before counting down the slots.
++// The value is of interest ONLY if medium is NOT busy at the moment 
++// of calling this method!
++
++// old implementation
++
++//void
++//BackoffTimer::start(int cw, int idle)
++
++// new implementation    
++
+ void
+-BackoffTimer::start(int cw, int idle)
++BackoffTimer::start(int cw, int idle, double time)
++// BUGFIX UKA END: EIFS
++
+ {
+ 	Scheduler &s = Scheduler::instance();
+ 
+@@ -239,14 +254,33 @@
+ #ifdef USE_SLOT_TIME
+ 	ROUND_TIME();
+ #endif
+-	difs_wait = 0.0;
+ 
++	// BUGFIX UKA: EIFS
++	// use the time parameter if necessary
++
++	// old implementation
++	
++    /*
++	difs_wait = 0.0;
+ 	if(idle == 0)
+ 		paused_ = 1;
+ 	else {
+ 		assert(rtime >= 0.0);
+ 		s.schedule(this, &intr, rtime);
+ 	}
++	*/
++
++	// new implementation
++	
++    if(idle == 0) {
++		difs_wait = 0.0;
++		paused_ = 1;
++    } else {
++		difs_wait = time;
++		assert(rtime >= 0.0);
++		s.schedule(this, &intr, rtime + difs_wait);
++	}
++	// BUGFIX UKA END: EIFS
+ }
+ 
+ 
+diff -Naur ns-allinone-2.28-orig/ns-2.28/mac/mac-timers.h ns-allinone-2.28/ns-2.28/mac/mac-timers.h
+--- ns-allinone-2.28-orig/ns-2.28/mac/mac-timers.h	2006-02-08 15:25:07.000000000 +0100
++++ ns-allinone-2.28/ns-2.28/mac/mac-timers.h	2006-02-07 11:32:59.000000000 +0100
+@@ -73,11 +73,19 @@
+ class BackoffTimer : public MacTimer {
+ public:
+ 	BackoffTimer(Mac802_11 *m) : MacTimer(m), difs_wait(0.0) {}
+-
+-
+-
+-	void	start(int cw, int idle);
+-	void	handle(Event *e);
++	// BUGFIX UKA: EIFS
++	// new declaration of start method with new parameter
++	
++	// old implementation
++    
++    // void	start(int cw, int idle);
++    
++    // new implementation
++	
++    void	start(int cw, int idle, double time);
++	// BUGFIX UKA END: EIFS
++	
++    void	handle(Event *e);
+ 	void	pause(void);
+ 	void	resume(double difs);
+ private:
+diff -Naur ns-allinone-2.28-orig/ns-2.28/tcl/lib/ns-default.tcl ns-allinone-2.28/ns-2.28/tcl/lib/ns-default.tcl
+--- ns-allinone-2.28-orig/ns-2.28/tcl/lib/ns-default.tcl	2006-02-08 15:25:07.000000000 +0100
++++ ns-allinone-2.28/ns-2.28/tcl/lib/ns-default.tcl	2006-02-07 11:33:42.000000000 +0100
+@@ -674,7 +674,10 @@
+  Mac/802_11 set ShortRetryLimit_       7               ;# retransmittions
+  Mac/802_11 set LongRetryLimit_        4               ;# retransmissions
+ 
+-
++# BUGFIX UKA: capture 
++# By default, new implementation of the card chipset is deactivated.
++ Mac/802_11 set newchipset_ false
++# BUGFIX UKA END: capture 
+ 
+ # 
+ # Support for Abstract LAN
+diff -Naur ns-allinone-2.28-orig/ns-2.28/trace/cmu-trace.h ns-allinone-2.28/ns-2.28/trace/cmu-trace.h
+--- ns-allinone-2.28-orig/ns-2.28/trace/cmu-trace.h	2006-02-08 15:25:07.000000000 +0100
++++ ns-allinone-2.28/ns-2.28/trace/cmu-trace.h	2006-02-07 11:33:20.000000000 +0100
+@@ -66,6 +66,12 @@
+ 
+ #define DROP_END_OF_SIMULATION		"END"
+ #define	DROP_MAC_COLLISION		"COL"
++
++// BUGFIX UKA: capture
++// packet drop in case of a packet capture
++#define DROP_MAC_CAPTURE        "CAP"
++// BUGFIX UKA END: capture
++
+ #define DROP_MAC_DUPLICATE		"DUP"
+ #define DROP_MAC_PACKET_ERROR		"ERR"
+ #define DROP_MAC_RETRY_COUNT_EXCEEDED	"RET"

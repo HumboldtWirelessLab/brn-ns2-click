@@ -1,0 +1,37 @@
+diff -rupN ns-allinone-2.29-orig/install ns-allinone-2.29/install
+--- ns-allinone-2.29-orig/install	2005-10-22 19:34:47.000000000 +0200
++++ ns-allinone-2.29/install	2008-08-26 19:13:25.000000000 +0200
+@@ -516,15 +516,31 @@ echo "==================================
+ echo "* Build ns-$NSVER"
+ echo "============================================================"
+ 
++if [ "x$CLICKPATH" = "x" ]; then
++  echo "Please set CLICKPATH"
++  exit
++else
++  if [ -f $CLICKPATH/lib/libnsclick.so ]; then
++    echo "Found libnsclick.so"
++  else
++    if [ -f $CLICKPATH/ns/libnsclick.so ]; then
++      ln -s $CLICKPATH/ns/libnsclick.so $CLICKPATH/lib/libnsclick.so
++    else
++      echo "No libnsclick"
++      exit
++    fi
++  fi
++fi
++	       
+ cd ./ns-$NSVER
+ if [ -f Makefile ] ; then 
+ 	make distclean
+ fi
+ 
+ if  [ "${test_cygwin}" = "true" ]; then
+-        ./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include || die "Ns configuration failed! Exiting ...";
++	./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+ else
+-        ./configure || die "Ns configuration failed! Exiting ...";
++        ./configure --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+ fi
+ 
+ if make

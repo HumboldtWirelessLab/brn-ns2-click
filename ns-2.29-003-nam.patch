@@ -1,0 +1,85 @@
+diff -rupN nam-1.11-0/agent.h nam-1.11-3/agent.h
+--- nam-1.11-0/agent.h	2001-06-16 03:53:10.000000000 +0200
++++ nam-1.11-3/agent.h	2005-11-27 00:57:09.000000000 +0100
+@@ -70,7 +70,7 @@ public:
+   inline double width()  {return width_;}
+   inline double height() {return height_;}
+   virtual void findClosestCornertoPoint(double x, double y, 
+-               double &corner_x, double &corner_y) const = NULL; 
++               double &corner_x, double &corner_y) const = 0; 
+   virtual void place(double x, double y);
+   void label(const char* name, int anchor);
+   void color(const char* name);
+diff -rupN nam-1.11-0/configure nam-1.11-3/configure
+--- nam-1.11-0/configure	2005-10-23 05:08:10.000000000 +0200
++++ nam-1.11-3/configure	2005-11-27 00:57:36.000000000 +0100
+@@ -10,6 +10,7 @@
+ ## M4sh Initialization.  ##
+ ## --------------------- ##
+ 
++
+ # Be Bourne compatible
+ if test -n "${ZSH_VERSION+set}" && (emulate sh) >/dev/null 2>&1; then
+   emulate sh
+@@ -4512,6 +4513,7 @@ if test `echo "$target_os" | sed 's/\..*
+ 	solaris="yes"
+ fi
+ 
++
+ #places="Tcl \
+ #	/usr/src/local/Tcl \
+ #	../../Tcl \
+@@ -8279,7 +8281,14 @@ LIBOBJS=$ac_libobjs
+ 
+ LTLIBOBJS=$ac_ltlibobjs
+ 
+-
++# XXX temporary hack for Mac OS X and nam-1.11 in ns-allinone-2.29 release
++if test `echo "$ac_cv_build" | sed 's/[0-9]\.[0-9]\.[0-9]//'` = powerpc-apple-darwin ; then
++    echo "### rewriting V_LIBS and LIBS for OS X installation (ns-allinone-2.29, nam-1.11 specific hack)"
++    mkdir lib
++    ln -s /System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation lib/libcore.dylib
++    V_LIBS="../otcl-1.11/libotcl.a ../tclcl-1.17/libtclcl.a ../lib/libtcl8.4.a ../lib/libtk8.4.a ../lib/libtclstub8.4.a ../lib/libtkstub8.4.a /usr/lib/libSystemStubs.a -L/usr/lib -lSystem -lSystem.B -lz"
++    LIBS="-lm -L/export/ns/lib -L./lib -lcore"
++fi
+ 
+ : ${CONFIG_STATUS=./config.status}
+ ac_clean_files_save=$ac_clean_files
+diff -rupN nam-1.11-0/netgraph.h nam-1.11-3/netgraph.h
+--- nam-1.11-0/netgraph.h	2000-05-18 20:06:32.000000000 +0200
++++ nam-1.11-3/netgraph.h	2006-05-19 23:05:28.000000000 +0200
+@@ -68,7 +68,7 @@ class NetGraph : public TraceHandler {
+ 	virtual void handle(const TraceEvent&, double now, int direction);
+ 	virtual int command(int argc, const char *const *argv);
+ 	virtual void BoundingBox(BBox&);
+-	virtual void NetGraph::render(GraphView* view);
++	virtual void render(GraphView* view);
+     protected:
+ 	GraphView *views_;
+ 	float graphdata_[MAX_GRAPH];
+diff -rupN nam-1.11-0/node.h nam-1.11-3/node.h
+--- nam-1.11-0/node.h	2001-08-10 03:45:47.000000000 +0200
++++ nam-1.11-3/node.h	2006-05-19 23:05:28.000000000 +0200
+@@ -223,7 +223,7 @@ public:
+ 	Queue* queue() { return queue_; }
+ 	void add_sess_queue(unsigned int grp, Queue *q);
+ 	char * getTclScript();
+-	char * Node::getTclScriptLabel();
++	char * getTclScriptLabel();
+ 	void setTclScript(const char * label, const char * script);
+ 
+ 	int command(int argc, const char * const * argv);
+diff -rupN nam-1.11-0/parser.h nam-1.11-3/parser.h
+--- nam-1.11-0/parser.h	2005-01-24 20:53:07.000000000 +0100
++++ nam-1.11-3/parser.h	2006-05-19 23:05:28.000000000 +0200
+@@ -94,8 +94,8 @@ public:
+ class ParseTable {
+ public:
+   //<zheng: +++>
+-  static bool ParseTable::nam4wpan;
+-  static int ParseTable::wpan_bradius;
++  static bool nam4wpan;
++  static int wpan_bradius;
+   //</zheng: +++>
+   TraceSyntax * syntax_list;
+ private:

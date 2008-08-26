@@ -1,0 +1,8 @@
+Installing the patch:
+
+1) copy the file ns-2.28-DCF-PHY-UKA.patch to the ns-2.28 base directory, e.g. ~/ns-allinone-2.28
+2) change to the ns-2.28 base directory
+3) type: patch -p1 < ns-2.28-DCF-PHY-UKA.patch 
+4) change to the subdirectory ns-2.28
+5) type make
+
