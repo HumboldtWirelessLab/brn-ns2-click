@@ -1,143 +1,67 @@
-diff -rupN ns-2.29-click/diffusion/diffusion.h ns-2.29/diffusion/diffusion.h
---- ns-2.29-click/diffusion/diffusion.h	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/diffusion/diffusion.h	2008-08-27 18:38:44.000000000 +0200
-@@ -138,6 +138,10 @@ class SendBufTimer : public TimerHandler
+diff -rupN ns-2.29/diffusion/diffusion.h ns-2.29-click/diffusion/diffusion.h
+--- ns-2.29/diffusion/diffusion.h	2008-08-27 19:06:35.000000000 +0200
++++ ns-2.29-click/diffusion/diffusion.h	2007-03-08 15:12:37.000000000 +0100
+@@ -138,10 +138,6 @@ class SendBufTimer : public TimerHandler
  };
  
  
-+void XmitFailedCallback(Packet *pkt, void *data);
-+class ArpBufferTimer;
-+class SendBufTimer;
-+
+-void XmitFailedCallback(Packet *pkt, void *data);
+-class ArpBufferTimer;
+-class SendBufTimer;
+-
  class DiffusionAgent : public Agent {
   public:
    DiffusionAgent();
-diff -rupN ns-2.29-click/diffusion/omni_mcast.h ns-2.29/diffusion/omni_mcast.h
---- ns-2.29-click/diffusion/omni_mcast.h	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/diffusion/omni_mcast.h	2008-08-27 18:38:44.000000000 +0200
-@@ -157,6 +157,10 @@ class OmniMcast_Entry {
+diff -rupN ns-2.29/diffusion/omni_mcast.h ns-2.29-click/diffusion/omni_mcast.h
+--- ns-2.29/diffusion/omni_mcast.h	2008-08-27 19:06:35.000000000 +0200
++++ ns-2.29-click/diffusion/omni_mcast.h	2007-03-08 15:12:37.000000000 +0100
+@@ -157,10 +157,6 @@ class OmniMcast_Entry {
  
  
  
-+void OmniMcastXmitFailedCallback(Packet *pkt, void *data);
-+
-+class OmniMcastArpBufferTimer;
-+class OmniMcastSendBufTimer;
+-void OmniMcastXmitFailedCallback(Packet *pkt, void *data);
+-
+-class OmniMcastArpBufferTimer;
+-class OmniMcastSendBufTimer;
  
  class OmniMcastAgent : public Agent {
   public:
-diff -rupN ns-2.29-click/dsr/dsragent.h ns-2.29/dsr/dsragent.h
---- ns-2.29-click/dsr/dsragent.h	2008-08-27 18:33:26.000000000 +0200
-+++ ns-2.29/dsr/dsragent.h	2008-08-27 18:38:44.000000000 +0200
-@@ -110,6 +110,12 @@ protected:
+diff -rupN ns-2.29/dsr/dsragent.h ns-2.29-click/dsr/dsragent.h
+--- ns-2.29/dsr/dsragent.h	2008-08-27 19:06:35.000000000 +0200
++++ ns-2.29-click/dsr/dsragent.h	2007-03-08 15:12:37.000000000 +0100
+@@ -110,12 +110,6 @@ protected:
  
  LIST_HEAD(DSRAgent_List, DSRAgent);
  
-+void XmitFailureCallback(Packet *pkt, void *data);
-+void XmitFlowFailureCallback(Packet *pkt, void *data);
-+int FilterFailure(Packet *p, void *data);
-+class SendBufferTimer;
-+
-+
+-void XmitFailureCallback(Packet *pkt, void *data);
+-void XmitFlowFailureCallback(Packet *pkt, void *data);
+-int FilterFailure(Packet *p, void *data);
+-class SendBufferTimer;
+-
+-
  class DSRAgent : public Tap, public Agent {
  public:
  
-diff -rupN ns-2.29-click/mobile/dumb-agent.h ns-2.29/mobile/dumb-agent.h
---- ns-2.29-click/mobile/dumb-agent.h	2008-08-27 18:33:04.000000000 +0200
-+++ ns-2.29/mobile/dumb-agent.h	2005-10-20 06:45:22.000000000 +0200
-@@ -53,7 +53,6 @@
+diff -rupN ns-2.29/mobile/dumb-agent.h ns-2.29-click/mobile/dumb-agent.h
+--- ns-2.29/mobile/dumb-agent.h	2005-10-20 06:45:22.000000000 +0200
++++ ns-2.29-click/mobile/dumb-agent.h	2007-03-08 15:12:37.000000000 +0100
+@@ -53,6 +53,7 @@
  #ifndef NS_DUMB_AGENT_H
  #define NS_DUMB_AGENT_H
  
--#include <stdarg.h>
++#include <stdarg.h>
  #include "agent.h"
  #include "ll.h"
  #include "trace.h"
-diff -rupN ns-2.29-click/mobile/god.h ns-2.29/mobile/god.h
---- ns-2.29-click/mobile/god.h	2008-08-27 18:33:04.000000000 +0200
-+++ ns-2.29/mobile/god.h	2008-08-27 18:38:44.000000000 +0200
-@@ -85,20 +85,20 @@ public:
- 		return sqrt(X*X + Y*Y + Z*Z);
- 	}
- 
--	inline void vector::operator=(const vector a) {
-+	inline void operator=(const vector a) {
- 		X = a.X;
- 		Y = a.Y;
- 		Z = a.Z;
- 	}
--	inline void vector::operator+=(const vector a) {
-+	inline void operator+=(const vector a) {
- 		X += a.X;
- 		Y += a.Y;
- 		Z += a.Z;
- 	}
--	inline int vector::operator==(const vector a) {
-+	inline int operator==(const vector a) {
- 		return (X == a.X && Y == a.Y && Z == a.Z);
- 	}
--	inline int vector::operator!=(const vector a) {
-+	inline int operator!=(const vector a) {
- 		return (X != a.X || Y != a.Y || Z != a.Z);
- 	}
- 	inline vector operator-(const vector a) {
-diff -rupN ns-2.29-click/pgm/pgm-agent.cc ns-2.29/pgm/pgm-agent.cc
---- ns-2.29-click/pgm/pgm-agent.cc	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/pgm/pgm-agent.cc	2008-08-27 18:38:44.000000000 +0200
-@@ -304,7 +304,7 @@ protected:
- 
-   void print_stats();
- 
--  void PgmAgent::trace_event(char *evType, double evTime);
-+  void trace_event(char *evType, double evTime);
- 
- #ifdef PGM_DEBUG
-   void display_packet(Packet *pkt);
-diff -rupN ns-2.29-click/pgm/pgm-receiver.cc ns-2.29/pgm/pgm-receiver.cc
---- ns-2.29-click/pgm/pgm-receiver.cc	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/pgm/pgm-receiver.cc	2008-08-27 18:38:44.000000000 +0200
-@@ -183,7 +183,7 @@ protected:
-   void print_stats();
-   void display_packet(Packet *pkt); // For debugging.
- 
--  void PgmReceiver::trace_event(char *evType, double evTime);
-+  void trace_event(char *evType, double evTime);
- 
-   EventTrace * et_;  //Trace Object for Custom Event Trace
- 
-diff -rupN ns-2.29-click/pgm/pgm-sender.cc ns-2.29/pgm/pgm-sender.cc
---- ns-2.29-click/pgm/pgm-sender.cc	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/pgm/pgm-sender.cc	2008-08-27 18:38:44.000000000 +0200
-@@ -186,7 +186,7 @@ protected:
- 
-   void display_packet(Packet *pkt); // For debugging.
- 
--  void PgmSender::trace_event(char *evType, nsaddr_t daddr, double evTime); 
-+  void trace_event(char *evType, nsaddr_t daddr, double evTime); 
- 
-   EventTrace * et_; 	//Trace Object for custom Event Traces
- 
-diff -rupN ns-2.29-click/sctp/sctp.h ns-2.29/sctp/sctp.h
---- ns-2.29-click/sctp/sctp.h	2008-08-27 18:33:04.000000000 +0200
-+++ ns-2.29/sctp/sctp.h	2008-08-27 18:38:44.000000000 +0200
-@@ -702,7 +702,7 @@ protected:
- 
-   /* debugging functions
-    */
--  void SctpAgent::DumpSendBuffer();
-+  void		DumpSendBuffer();
- 
-   /* sctp association state variable
-    */
-diff -rupN ns-2.29-click/tcl/ex/nsclick-simple-hybrid.tcl ns-2.29/tcl/ex/nsclick-simple-hybrid.tcl
---- ns-2.29-click/tcl/ex/nsclick-simple-hybrid.tcl	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/tcl/ex/nsclick-simple-hybrid.tcl	2008-08-27 18:38:44.000000000 +0200
+diff -rupN ns-2.29/tcl/ex/nsclick-simple-hybrid.tcl ns-2.29-click/tcl/ex/nsclick-simple-hybrid.tcl
+--- ns-2.29/tcl/ex/nsclick-simple-hybrid.tcl	2008-08-27 19:06:35.000000000 +0200
++++ ns-2.29-click/tcl/ex/nsclick-simple-hybrid.tcl	2007-03-08 15:12:37.000000000 +0100
 @@ -189,7 +189,7 @@ for {set i 0} {$i < $wirelessnodecount }
      # "eth2" and so on.
      #
      $wireless_node_($i) add-interface $wireless_chan_ $prop_ $netll \
--	    $wirelessmac $netifq 1 $wirelessphy $antenna
-+	    $wirelessmac $netifq 1 $wirelessphy $antenna $wtopo
+-	    $wirelessmac $netifq 1 $wirelessphy $antenna $wtopo
++	    $wirelessmac $netifq 1 $wirelessphy $antenna
  
      #
      # Now configure the interface eth0
@@ -145,118 +69,106 @@ diff -rupN ns-2.29-click/tcl/ex/nsclick-simple-hybrid.tcl ns-2.29/tcl/ex/nsclick
  $bridge_node_ add-wired-interface $wired_chan_ $netll $wiredmac \
  	$netifq 1 $wiredphy
  $bridge_node_ add-interface $wireless_chan_ $prop_ $netll \
--	    $wirelessmac $netifq 1 $wirelessphy $antenna
-+	    $wirelessmac $netifq 1 $wirelessphy $antenna $wtopo
+-	    $wirelessmac $netifq 1 $wirelessphy $antenna $wtopo
++	    $wirelessmac $netifq 1 $wirelessphy $antenna
  
  $bridge_node_ random-motion 0
  $bridge_node_ topography $wtopo
-@@ -361,10 +361,12 @@ $wired_node_(2) set Z_ 0
+@@ -361,12 +361,10 @@ $wired_node_(2) set Z_ 0
  #
  for {set i 0} {$i < $wirelessnodecount} {incr i} {
      $ns_ initial_node_pos $wireless_node_($i) 10
-+    [$wireless_node_($i) entry] runclick
+-    [$wireless_node_($i) entry] runclick
  }
  
  for {set i 0} {$i < $wirednodecount} {incr i} {
      $ns_ initial_node_pos $wired_node_($i) 10
-+    [$wired_node_($i) entry] runclick
+-    [$wired_node_($i) entry] runclick
  }
  
  $ns_ initial_node_pos $bridge_node_ 10
-diff -rupN ns-2.29-click/tcl/ex/nsclick-simple-lan.tcl ns-2.29/tcl/ex/nsclick-simple-lan.tcl
---- ns-2.29-click/tcl/ex/nsclick-simple-lan.tcl	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/tcl/ex/nsclick-simple-lan.tcl	2008-08-27 18:38:44.000000000 +0200
-@@ -249,6 +249,7 @@ $node_(3) set Z_ 0
+diff -rupN ns-2.29/tcl/ex/nsclick-simple-lan.tcl ns-2.29-click/tcl/ex/nsclick-simple-lan.tcl
+--- ns-2.29/tcl/ex/nsclick-simple-lan.tcl	2008-08-27 19:06:35.000000000 +0200
++++ ns-2.29-click/tcl/ex/nsclick-simple-lan.tcl	2007-03-08 15:12:37.000000000 +0100
+@@ -249,7 +249,6 @@ $node_(3) set Z_ 0
  #
  for {set i 0} {$i < $nodecount} {incr i} {
      $ns_ initial_node_pos $node_($i) 20
-+    [$node_($i) entry] runclick
+-    [$node_($i) entry] runclick
  }
  
  #
-diff -rupN ns-2.29-click/tcl/ex/nsclick-simple-wlan.tcl ns-2.29/tcl/ex/nsclick-simple-wlan.tcl
---- ns-2.29-click/tcl/ex/nsclick-simple-wlan.tcl	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/tcl/ex/nsclick-simple-wlan.tcl	2008-08-27 18:38:44.000000000 +0200
+diff -rupN ns-2.29/tcl/ex/nsclick-simple-wlan.tcl ns-2.29-click/tcl/ex/nsclick-simple-wlan.tcl
+--- ns-2.29/tcl/ex/nsclick-simple-wlan.tcl	2008-08-27 19:06:35.000000000 +0200
++++ ns-2.29-click/tcl/ex/nsclick-simple-wlan.tcl	2007-03-08 15:12:37.000000000 +0100
 @@ -166,7 +166,7 @@ for {set i 0} {$i < $nodecount } {incr i
      # "eth2" and so on.
      #
      $node_($i) add-interface $chan_1_ $prop_ $netll $netmac \
--	$netifq 1 $netphy $antenna
-+	$netifq 1 $netphy $antenna $wtopo
+-	$netifq 1 $netphy $antenna $wtopo
++	$netifq 1 $netphy $antenna
  
      #
      # Now configure the interface eth0
-@@ -273,6 +273,7 @@ $node_(3) set Z_ 0
+@@ -273,7 +273,6 @@ $node_(3) set Z_ 0
  #
  for {set i 0} {$i < $nodecount} {incr i} {
      $ns_ initial_node_pos $node_($i) 20
-+    [$node_($i) entry] runclick
+-    [$node_($i) entry] runclick
  }
  
  #
-diff -rupN ns-2.29-click/tcl/lib/ns-autoconf.tcl ns-2.29/tcl/lib/ns-autoconf.tcl
---- ns-2.29-click/tcl/lib/ns-autoconf.tcl	2008-08-27 18:33:22.000000000 +0200
-+++ ns-2.29/tcl/lib/ns-autoconf.tcl	1970-01-01 01:00:00.000000000 +0100
-@@ -1,50 +0,0 @@
--# -*-	Mode:tcl -*-
--#
--# Copyright (c) 1997 University of Southern California.
--# All rights reserved.                                            
--#                                                                
--# Redistribution and use in source and binary forms are permitted
--# provided that the above copyright notice and this paragraph are
--# duplicated in all such forms and that any documentation, advertising
--# materials, and other materials related to such distribution and use
--# acknowledge that the software was developed by the University of
--# Southern California, Information Sciences Institute.  The name of the
--# University may not be used to endorse or promote products derived from
--# this software without specific prior written permission.
--# 
--# THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
--# WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
--# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
--#
--#
--
--# This file should contain variables changed only by autoconf.
--
--proc checkout_executable {exe_var best alternate text} {
--	global $exe_var
--	set $exe_var $best
--	if {"$best" == "" || ![file executable $best]} {
--		puts stderr $text
--		set $exe_var $alternate
--	}
--}
--
--#
--# Keep track of where the good perl is.
--#
--checkout_executable PERL "/usr/bin/perl" perl "\
--	When configured, ns found the right version of perl in\
--	/usr/bin/perl
--	but it doesn't seem to be there anymore, so\
--	ns will fall back on running the first perl in your path.\
--	The wrong version of perl may break the test suites.\
--	Reconfigure and rebuild ns if this is a problem.\
--"
--checkout_executable TCLSH "/usr/bin/tclsh8.4" tclsh "\
--	When configured, ns found the right version of tclsh in\
--	/usr/bin/tclsh8.4
--	but it doesn't seem to be there anymore, so\
--	ns will fall back on running the first tclsh in your path.\
--	The wrong version of tclsh may break the test suites.\
--	Reconfigure and rebuild ns if this is a problem.\
--"
-diff -rupN ns-2.29-click/tcp/tcp-sack-rh.cc ns-2.29/tcp/tcp-sack-rh.cc
---- ns-2.29-click/tcp/tcp-sack-rh.cc	2008-08-27 18:33:25.000000000 +0200
-+++ ns-2.29/tcp/tcp-sack-rh.cc	2008-08-27 18:38:44.000000000 +0200
-@@ -65,7 +65,7 @@ class SackRHTcpAgent : public TcpAgent {
- 	virtual void estadjust();
- 	virtual void rhclear();
- 	virtual void computefack();
--	virtual void SackRHTcpAgent::newack(Packet* pkt);
-+	virtual void newack(Packet* pkt);
-  protected:
- 	int fack_;	          /* the FACK state variable  */
- 	int retran_data_;         /* the number of retransmitted packets in the pipe  */
+diff -rupN ns-2.29/tcl/lib/ns-autoconf.tcl ns-2.29-click/tcl/lib/ns-autoconf.tcl
+--- ns-2.29/tcl/lib/ns-autoconf.tcl	1970-01-01 01:00:00.000000000 +0100
++++ ns-2.29-click/tcl/lib/ns-autoconf.tcl	2007-03-08 15:12:37.000000000 +0100
+@@ -0,0 +1,50 @@
++# -*-	Mode:tcl -*-
++#
++# Copyright (c) 1997 University of Southern California.
++# All rights reserved.                                            
++#                                                                
++# Redistribution and use in source and binary forms are permitted
++# provided that the above copyright notice and this paragraph are
++# duplicated in all such forms and that any documentation, advertising
++# materials, and other materials related to such distribution and use
++# acknowledge that the software was developed by the University of
++# Southern California, Information Sciences Institute.  The name of the
++# University may not be used to endorse or promote products derived from
++# this software without specific prior written permission.
++# 
++# THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR IMPLIED
++# WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
++# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++#
++#
++
++# This file should contain variables changed only by autoconf.
++
++proc checkout_executable {exe_var best alternate text} {
++	global $exe_var
++	set $exe_var $best
++	if {"$best" == "" || ![file executable $best]} {
++		puts stderr $text
++		set $exe_var $alternate
++	}
++}
++
++#
++# Keep track of where the good perl is.
++#
++checkout_executable PERL "/usr/bin/perl" perl "\
++	When configured, ns found the right version of perl in\
++	/usr/bin/perl
++	but it doesn't seem to be there anymore, so\
++	ns will fall back on running the first perl in your path.\
++	The wrong version of perl may break the test suites.\
++	Reconfigure and rebuild ns if this is a problem.\
++"
++checkout_executable TCLSH "/usr/bin/tclsh8.4" tclsh "\
++	When configured, ns found the right version of tclsh in\
++	/usr/bin/tclsh8.4
++	but it doesn't seem to be there anymore, so\
++	ns will fall back on running the first tclsh in your path.\
++	The wrong version of tclsh may break the test suites.\
++	Reconfigure and rebuild ns if this is a problem.\
++"
