@@ -2936,13 +2936,13 @@ diff -rupN ns-2.29/pgm/pgm-sender.cc ns-2.29-click-scheduler/pgm/pgm-sender.cc
  
 diff -rupN ns-2.29/sctp/sctp.h ns-2.29-click-scheduler/sctp/sctp.h
 --- ns-2.29/sctp/sctp.h	2008-08-28 16:36:36.000000000 +0200
-+++ ns-2.29-click-scheduler/sctp/sctp.h	2007-03-08 15:12:37.000000000 +0100
++++ ns-2.29-click-scheduler/sctp/sctp.h	2008-08-28 16:51:52.000000000 +0200
 @@ -702,7 +702,7 @@ protected:
  
    /* debugging functions
     */
 -  void		DumpSendBuffer();
-+  void SctpAgent::DumpSendBuffer();
++  void DumpSendBuffer();
  
    /* sctp association state variable
     */
