@@ -12,9 +12,8 @@ if [ "x$CLICKPATH" = "x" ]; then
   exit 0
 fi
 
-
 key=0
-echo "(1) 2.28"
+echo "(1) 2.29-brn (Scheduler-Patch,Brn-extra)"
 echo "(2) 2.29"
 echo "(3) 2.29.3"
 echo "(4) 2.30"
@@ -24,103 +23,101 @@ while [ $key != "1" ] && [ $key != "2" ] && [ $key != "3" ] && [ $key != "4" ]; 
   read key
 done
 
+download_and_unpack() {
+  if [ ! -f /tmp/$2 ]; then
+    (cd /tmp/; wget $1)
+
+    if [ -e /tmp/$3 ]; then
+      rm -rf /tmp/$3
+    fi
+    
+    (cd /tmp/; tar xvfz $2)
+  fi
+}
+
+create_dir() {
+  if [ ! -e $1 ]; then
+    mkdir $1
+    mkdir $1/bin
+  fi
+}
+
+install_file() {
+  (cd /tmp/$1; mv include $2/ ; mv man $2/ ; mv lib $2/)
+  mv /tmp/$1/cweb/ctangle $2/bin/
+  mv /tmp/$1/cweb/cweave $2/bin/
+  mv /tmp/$1/xgraph-12.1/xgraph $2/bin/
+  mv /tmp/$1/bin/tclsh8.4 $2/bin/
+  mv /tmp/$1/bin/wish8.4 $2/bin/
+
+  if [ "$1" = "ns-allinone-2.29"  ]; then
+    mv /tmp/ns-allinone-2.29/nam-1.11/nam $2/bin/
+    mv /tmp/ns-allinone-2.29/ns-2.29/ns $2/bin/
+  else
+    mv /tmp/ns-allinone-2.30/nam-1.12/nam $2/bin/
+    mv /tmp/ns-allinone-2.30/ns-2.30/ns $2/bin/
+  fi
+}
+
+clean_up() {
+  rm -rf /tmp/$2
+  rm -f /tmp/$1
+}
+
 case "$key" in
     "1")
-	echo "Not supported"
-	;;
-    "2")
-	echo "Install ns-2.29"
-	if [ ! -f /tmp/ns-allinone-2.29.tar.gz ]; then
-	  (cd /tmp/; wget http://www.isi.edu/nsnam/dist/ns-allinone-2.29.tar.gz)
-	fi
-	if [ -e /tmp/ns-allinone-2.29 ]; then
-	  rm -rf /tmp/ns-allinone-2.29
-	fi
+	echo "Install ns-2.29-brn"
+
+	download_and_unpack "http://www.isi.edu/nsnam/dist/ns-allinone-2.29.tar.gz" ns-allinone-2.29.tar.gz ns-allinone-2.29
 	
-	(cd /tmp/; tar xvfz ns-allinone-2.29.tar.gz)
-	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-patch;patch -Np1 -i $dir/ns-2.29-002-brnextra.patch)
+	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-patch; patch -Np1 -i $dir/ns-2.29-scheduler.patch)
+	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-002-brnextra-patch)
 	(cd /tmp/ns-allinone-2.29/nam-1.11; patch -Np1 -i $dir/ns-2.29-003-nam.patch)
 	(cd /tmp/ns-allinone-2.29/; patch -Np1 -i $dir/ns-2.29-004-installfile.patch)
 	(cd /tmp/ns-allinone-2.29; export CLICKPATH=$CLICKPATH; ./install)
 	
-	if [ ! -e $PREFIX ]; then
-	  mkdir $PREFIX
-	  mkdir $PREFIX/bin
-	fi
-	
-	(cd /tmp/ns-allinone-2.29; mv include $PREFIX/ ; mv man $PREFIX/ ; mv lib $PREFIX/)
-	mv /tmp/ns-allinone-2.29/cweb/ctangle $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/cweb/cweave $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/nam-1.11/nam $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/ns-2.29/ns $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/xgraph-12.1/xgraph $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/bin/tclsh8.4 $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/bin/wish8.4 $PREFIX/bin/
-	
-	rm -rf /tmp/ns-allinone-2.29
-	rm -f /tmp/ns-allinone-2.29.tar.gz
+	create_dir $PREFIX
+	install_file ns-allinone-2.29 $PREFIX
+	clean_up ns-allinone-2.29.tar.gz ns-allinone-2.29
+	;;
+    "2")
+	echo "Install ns-2.29"
+
+	download_and_unpack "http://www.isi.edu/nsnam/dist/ns-allinone-2.29.tar.gz" ns-allinone-2.29.tar.gz ns-allinone-2.29
+
+	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-patch)
+	(cd /tmp/ns-allinone-2.29/nam-1.11; patch -Np1 -i $dir/ns-2.29-003-nam.patch)
+	(cd /tmp/ns-allinone-2.29/; patch -Np1 -i $dir/ns-2.29-004-installfile.patch)
+	(cd /tmp/ns-allinone-2.29; export CLICKPATH=$CLICKPATH; ./install)
+
+	create_dir $PREFIX
+	install_file ns-allinone-2.29 $PREFIX
+	clean_up ns-allinone-2.29.tar.gz ns-allinone-2.29
 	;;
     "3")
 	echo "Install ns-2.29.3"
-	if [ ! -f /tmp/ns-allinone-2.29.3.tar.gz ]; then
-	  (cd /tmp/; wget "http://downloads.sourceforge.net/nsnam/ns-allinone-2.29.3.tar.gz?modtime=1148674267&big_mirror=0")
-	fi
-	if [ -e /tmp/ns-allinone-2.29 ]; then
-	  rm -rf /tmp/ns-allinone-2.29
-	fi
 	
-	(cd /tmp/; tar xvfz ns-allinone-2.29.3.tar.gz)
+	download_and_unpack  "http://downloads.sourceforge.net/nsnam/ns-allinone-2.29.3.tar.gz?modtime=1148674267&big_mirror=0" ns-allinone-2.29.3.tar.gz ns-allinone-2.29
 	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29.3-patch)
 	(cd /tmp/ns-allinone-2.29/; patch -Np1 -i $dir/ns-2.29-004-installfile.patch)
 	(cd /tmp/ns-allinone-2.29; export CLICKPATH=$CLICKPATH; ./install)
-	
-	if [ ! -e $PREFIX ]; then
-	  mkdir $PREFIX
-	  mkdir $PREFIX/bin
-	fi
-	
-	(cd /tmp/ns-allinone-2.29; mv include $PREFIX/ ; mv man $PREFIX/ ; mv lib $PREFIX/)
-	mv /tmp/ns-allinone-2.29/cweb/ctangle $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/cweb/cweave $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/nam-1.11/nam $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/ns-2.29/ns $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/xgraph-12.1/xgraph $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/bin/tclsh8.4 $PREFIX/bin/
-	mv /tmp/ns-allinone-2.29/bin/wish8.4 $PREFIX/bin/
-	
-	rm -rf /tmp/ns-allinone-2.29
-	rm -f /tmp/ns-allinone-2.29.3.tar.gz
+
+	create_dir $PREFIX
+	install_file ns-allinone-2.29 $PREFIX
+	clean_up ns-allinone-2.29.3.tar.gz ns-allinone-2.29
 	;;
     "4")
 	echo "Install ns-2.30"
-	if [ ! -f /tmp/ns-allinone-2.30.tar.gz ]; then
-	  (cd /tmp/; wget http://www.isi.edu/nsnam/dist/ns-allinone-2.30.tar.gz)
-	fi
-	if [ -e /tmp/ns-allinone-2.30 ]; then
-	  rm -rf /tmp/ns-allinone-2.30
-	fi
-	
-	(cd /tmp/; tar xvfz ns-allinone-2.30.tar.gz)
+
+	download_and_unpack "http://www.isi.edu/nsnam/dist/ns-allinone-2.30.tar.gz" ns-allinone-2.30.tar.gz ns-allinone-2.30
+
 	(cd /tmp/ns-allinone-2.30/ns-2.30; patch -Np1 -i $dir/ns-2.30-patch)
 	(cd /tmp/ns-allinone-2.30/; patch -Np1 -i $dir/ns-2.30-002-installfile.patch)
 	(cd /tmp/ns-allinone-2.30; export CLICKPATH=$CLICKPATH; ./install)
-	
-	if [ ! -e $PREFIX ]; then
-	  mkdir $PREFIX
-	  mkdir $PREFIX/bin
-	fi
-	
-	(cd /tmp/ns-allinone-2.30; mv include $PREFIX/ ; mv man $PREFIX/ ; mv lib $PREFIX/)
-	mv /tmp/ns-allinone-2.30/cweb/ctangle $PREFIX/bin/
-	mv /tmp/ns-allinone-2.30/cweb/cweave $PREFIX/bin/
-	mv /tmp/ns-allinone-2.30/nam-1.12/nam $PREFIX/bin/
-	mv /tmp/ns-allinone-2.30/ns-2.30/ns $PREFIX/bin/
-	mv /tmp/ns-allinone-2.30/xgraph-12.1/xgraph $PREFIX/bin/
-	mv /tmp/ns-allinone-2.30/bin/tclsh8.4 $PREFIX/bin/
-	mv /tmp/ns-allinone-2.30/bin/wish8.4 $PREFIX/bin/
-	
-	rm -rf /tmp/ns-allinone-2.30
-	rm -f /tmp/ns-allinone-2.30.tar.gz
+
+	create_dir $PREFIX
+	install_file ns-allinone-2.30 $PREFIX
+	clean_up ns-allinone-2.30.tar.gz ns-allinone-2.30
 	;;
 esac
 
