@@ -1,0 +1,236 @@
+diff -urN ns-standard/common/scheduler.cc ns-SNOOPy/common/scheduler.cc
+--- ns-standard/common/scheduler.cc	2005-01-25 14:38:47.000000000 -0800
++++ ns-SNOOPy/common/scheduler.cc	2005-09-23 21:58:37.176465632 -0700
+@@ -34,6 +34,16 @@
+  * @(#) $Header: /nfs/jade/vint/CVSROOT/ns-2/common/scheduler.cc,v 1.71 2003/03/04 01:15:42 yuri Exp $
+  */
+ 
++/* Sep 2005: David Wei (weixl@caltech.edu):
++ * 1. change the Calendar Queue to be SNOOPy Calendar Queue to improve simulation speed
++ *    See related paper for SNOOPy queue:
++ *                Kah Leong Tan, Li-Jin Thng, "SNOOPy Calendar Queue",
++ *                Proceedings of the 32nd conference on Winter simulation
++ *                Orlando, Florida, Pages: 487 - 495, Year of Publication: 2000, ISBN:1-23456-789-0
++ * 2. use average intervals of dequeued events instead of average interval of events in the most crowded
++ *    bucket as the estimation of bucket width
++ */
++
+ #ifndef lint
+ static const char rcsid[] =
+     "@(#) $Header: /nfs/jade/vint/CVSROOT/ns-2/common/scheduler.cc,v 1.71 2003/03/04 01:15:42 yuri Exp $ (LBL)";
+@@ -580,6 +590,14 @@
+ } class_calendar_sched;
+ 
+ CalendarScheduler::CalendarScheduler() : cal_clock_(clock_) {
++#ifdef CALENDAR_NEW_WIDTH
++	avg_gap_ = -2;		//weixl for improving width calculation
++	last_time_ = -2; 	//weixl for improving width calculation
++	gap_num_ = 0;
++	head_search_ = 0;
++	insert_search_ = 0; 
++	round_num_ = 0; 
++#endif
+ 	reinit(4, 1.0, cal_clock_);
+ }
+ 
+@@ -594,47 +612,46 @@
+ CalendarScheduler::insert(Event* e)
+ {
+ 	int i;
+-	if (cal_clock_ > e->time_) {
++	double newtime = e->time_;
++	if (cal_clock_ > newtime) {
+ 		// may happen in RT scheduler
+-		cal_clock_ = e->time_;
++		cal_clock_ = newtime;
+ 		i = lastbucket_ = CALENDAR_HASH(cal_clock_);
+ 	} else
+-		i = CALENDAR_HASH(e->time_);
++		i = CALENDAR_HASH(newtime);
+ 
+-	Event *head = buckets_[i].list_;
+-	Event *before=0;
++	Bucket* current=(&buckets_[i]);
++	Event *head = current->list_;
++	Event *after=0;
+ 
+ 	if (!head) {
+-		buckets_[i].list_ = e;
++		current->list_ = e;
+ 		e->next_ = e->prev_ = e;
+ 		++stat_qsize_; 
+-		++buckets_[i].count_;
++		++(current->count_);
+ 	} else {
+-		bool newhead;
+-		if (e->time_ >= head->prev_->time_) {
+-			// insert at the tail
+-			before = head;
+-			newhead = false;
++		insert_search_++;
++		if (newtime < head->time_) {
++			//  e-> head -> ...
++			e->next_ = head;
++			e->prev_ = head->prev_;
++			e->prev_->next_ = e;
++			head->prev_ = e;
++			current->list_ = e;
++                        ++stat_qsize_;
++                        ++(current->count_);
+ 		} else {
+-			// insert event in time sorted order, FIFO for sim-time events
+-			for (before = head; e->time_ >= before->time_; before = before->next_)
+-				;
+-			newhead = (before == head);
+-		}
+-
+-		e->next_ = before;
+-		e->prev_ = before->prev_;
+-		before->prev_ = e;
+-		e->prev_->next_ = e;
+-		if (newhead) {
+-			buckets_[i].list_ = e;
+-			//assert(e->time_ <= e->next_->time_);
+-		}
+-		//assert(e->prev_ != e);
+-		if (e->prev_->time_ != e->time_) {
+-			// unique timing
+-			++stat_qsize_; 
+-			++buckets_[i].count_;
++                        for (after = head->prev_; newtime < after->time_; after = after->prev_) { insert_search_++; };
++			//...-> after -> e -> ...
++			e->next_ = after->next_;
++			e->prev_ = after;
++			e->next_->prev_ = e;
++			after->next_ = e;
++			if (after->time_ < newtime) {
++				//unique timing
++				++stat_qsize_; 
++				++(current->count_);
++			}
+ 		}
+ 	}
+ 	++qsize_;
+@@ -709,6 +726,7 @@
+ 	Event *e, *min_e = NULL;
+ #define CAL_DEQUEUE(x) 						\
+ do { 								\
++	head_search_++;						\
+ 	if ((e = buckets_[i].list_) != NULL) {			\
+ 		diff = e->time_ - cal_clock_;			\
+ 		if (diff < diff##x##_)	{			\
+@@ -766,6 +784,35 @@
+ 
+ 	if (!e)
+ 		return 0;
++//weixl for improving width calculation
++#ifdef CALENDAR_NEW_WIDTH
++	if (last_time_< 0) last_time_ = e->time_;
++	else 
++	{
++		gap_num_ ++;
++		if (gap_num_ >= qsize_ ) {
++	                double tt_gap_ = e->time_ - last_time_;
++			avg_gap_ = tt_gap_ / gap_num_;
++                        gap_num_ = 0;
++                        last_time_ = e->time_;
++			round_num_ ++;
++			if ((round_num_ > 20) &&
++				   (( head_search_> (insert_search_<<1))
++				  ||( insert_search_> (head_search_<<1)) )) 
++			{
++				resize(nbuckets_, cal_clock_);
++				round_num_ = 0;
++			} else {
++                                if (round_num_ > 100) {
++                                        round_num_ = 0;
++                                        head_search_ = 0;
++                                        insert_search_ = 0;
++                                }
++			}
++		}
++	};
++#endif
++//weixl done
+ 
+ 	int l = lastbucket_;
+ 
+@@ -826,10 +873,19 @@
+ void 
+ CalendarScheduler::resize(int newsize, double start)
+ {
+-	double bwidth = newwidth(newsize);
+-
+-	if (newsize < 4)
+-		newsize = 4;
++	double bwidth;
++	if (newsize == nbuckets_) {
++		/* we resize for bwidth*/
++		bwidth = head_search_;
++		bwidth = bwidth / insert_search_;
++		bwidth = sqrt (bwidth) * width_;
++		//snoopy queue calculation
++	} else {
++		/* we resize for size */
++		bwidth = newwidth(newsize);
++		if (newsize < 4)
++			newsize = 4;
++	}
+ 
+ 	Bucket *oldb = buckets_;
+ 	int oldn = nbuckets_;
+@@ -854,13 +910,21 @@
+ 			} while (e != tail);
+ 		}
+ 	}
+-	delete [] oldb;
++        head_search_ = 0;
++        insert_search_ = 0;
++	round_num_ = 0;
++        delete [] oldb;
+ }
+ 
+ // take samples from the most populated bucket.
+ double
+ CalendarScheduler::newwidth(int newsize)
+ {
++//by weixl for better width calculation
++#ifdef CALENDAR_NEW_WIDTH
++	if (avg_gap_ > 0) return avg_gap_*4.0;
++#endif
++//weixl done
+ 	int i;
+ 	int max_bucket = 0; // index of the fullest bucket
+ 	for (i = 1; i < nbuckets_; ++i) {
+diff -urN ns-standard/common/scheduler.h ns-SNOOPy/common/scheduler.h
+--- ns-standard/common/scheduler.h	2005-01-19 10:23:18.000000000 -0800
++++ ns-SNOOPy/common/scheduler.h	2005-09-23 21:58:29.084695768 -0700
+@@ -34,6 +34,12 @@
+  * @(#) $Header: /nfs/jade/vint/CVSROOT/ns-2/common/scheduler.h,v 1.26 2002/08/02 01:35:20 yuri Exp $ (LBL)
+  */
+ 
++/* Sep 2005: David Wei (weixl@caltech.edu): change on Calendar Queue. See .cc file for details */
++
++#ifndef CALENDAR_NEW_WIDTH
++#define CALENDAR_NEW_WIDTH 1
++#endif
++
+ #ifndef ns_scheduler_h
+ #define ns_scheduler_h
+ 
+@@ -153,6 +159,15 @@
+ 	const Event* head();
+ 
+ protected:
++#ifdef CALENDAR_NEW_WIDTH
++/* weixl for improvign width calculation*/
++	long unsigned head_search_;
++	long unsigned insert_search_;
++	int round_num_;
++	long int gap_num_;		//the number of gap samples in this window (in process of calculation)
++	double last_time_;		//the departure time of first event in this window
++	double avg_gap_;		//the average gap in last window (finished calculation)
++#endif
+ 	double width_;
+ 	double diff0_, diff1_, diff2_; /* wrap-around checks */
+ 
