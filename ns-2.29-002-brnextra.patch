@@ -2870,42 +2870,6 @@ diff -rupN ns-2.29/mobile/dumb-agent.h ns-2.29-click-scheduler/mobile/dumb-agent
  #include "agent.h"
  #include "ll.h"
  #include "trace.h"
-diff -rupN ns-2.29/pgm/pgm-agent.cc ns-2.29-click-scheduler/pgm/pgm-agent.cc
---- ns-2.29/pgm/pgm-agent.cc	2008-08-28 16:36:36.000000000 +0200
-+++ ns-2.29-click-scheduler/pgm/pgm-agent.cc	2007-03-08 15:12:37.000000000 +0100
-@@ -304,7 +304,7 @@ protected:
- 
-   void print_stats();
- 
--  void trace_event(char *evType, double evTime);
-+  void PgmAgent::trace_event(char *evType, double evTime);
- 
- #ifdef PGM_DEBUG
-   void display_packet(Packet *pkt);
-diff -rupN ns-2.29/pgm/pgm-receiver.cc ns-2.29-click-scheduler/pgm/pgm-receiver.cc
---- ns-2.29/pgm/pgm-receiver.cc	2008-08-28 16:36:36.000000000 +0200
-+++ ns-2.29-click-scheduler/pgm/pgm-receiver.cc	2007-03-08 15:12:37.000000000 +0100
-@@ -183,7 +183,7 @@ protected:
-   void print_stats();
-   void display_packet(Packet *pkt); // For debugging.
- 
--  void trace_event(char *evType, double evTime);
-+  void PgmReceiver::trace_event(char *evType, double evTime);
- 
-   EventTrace * et_;  //Trace Object for Custom Event Trace
- 
-diff -rupN ns-2.29/pgm/pgm-sender.cc ns-2.29-click-scheduler/pgm/pgm-sender.cc
---- ns-2.29/pgm/pgm-sender.cc	2008-08-28 16:36:36.000000000 +0200
-+++ ns-2.29-click-scheduler/pgm/pgm-sender.cc	2007-03-08 15:12:37.000000000 +0100
-@@ -186,7 +186,7 @@ protected:
- 
-   void display_packet(Packet *pkt); // For debugging.
- 
--  void trace_event(char *evType, nsaddr_t daddr, double evTime); 
-+  void PgmSender::trace_event(char *evType, nsaddr_t daddr, double evTime); 
- 
-   EventTrace * et_; 	//Trace Object for custom Event Traces
- 
 diff -rupN ns-2.29/sctp/sctp.h ns-2.29-click-scheduler/sctp/sctp.h
 --- ns-2.29/sctp/sctp.h	2008-08-28 16:36:36.000000000 +0200
 +++ ns-2.29-click-scheduler/sctp/sctp.h	2008-08-28 16:51:52.000000000 +0200
@@ -3160,18 +3124,6 @@ diff -rupN ns-2.29/tcp/tcp.h ns-2.29-click-scheduler/tcp/tcp.h
  
  	static int offset_;	// offset for this header
  	inline static int& offset() { return offset_; }
-diff -rupN ns-2.29/tcp/tcp-sack-rh.cc ns-2.29-click-scheduler/tcp/tcp-sack-rh.cc
---- ns-2.29/tcp/tcp-sack-rh.cc	2008-08-28 16:36:36.000000000 +0200
-+++ ns-2.29-click-scheduler/tcp/tcp-sack-rh.cc	2007-03-08 15:12:37.000000000 +0100
-@@ -65,7 +65,7 @@ class SackRHTcpAgent : public TcpAgent {
- 	virtual void estadjust();
- 	virtual void rhclear();
- 	virtual void computefack();
--	virtual void newack(Packet* pkt);
-+	virtual void SackRHTcpAgent::newack(Packet* pkt);
-  protected:
- 	int fack_;	          /* the FACK state variable  */
- 	int retran_data_;         /* the number of retransmitted packets in the pipe  */
 diff -rupN ns-2.29/tcp/tcp-sink.cc ns-2.29-click-scheduler/tcp/tcp-sink.cc
 --- ns-2.29/tcp/tcp-sink.cc	2005-10-20 06:45:25.000000000 +0200
 +++ ns-2.29-click-scheduler/tcp/tcp-sink.cc	2007-03-08 15:12:37.000000000 +0100
