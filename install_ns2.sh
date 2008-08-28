@@ -19,8 +19,11 @@ echo "(3) 2.29.3"
 echo "(4) 2.30"
 
 while [ $key != "1" ] && [ $key != "2" ] && [ $key != "3" ] && [ $key != "4" ]; do
-  echo "Choose Version (1-4)"
+  echo -n "Choose Version (1-4): "
   read key
+  if [ "x$key" = "x" ]; then
+    key=0
+  fi
 done
 
 download_and_unpack() {
@@ -60,8 +63,9 @@ install_file() {
 }
 
 clean_up() {
+  echo "Clean up"
   rm -rf /tmp/$2
-#  rm -f /tmp/$1
+  rm -f /tmp/$1
 }
 
 case "$key" in
