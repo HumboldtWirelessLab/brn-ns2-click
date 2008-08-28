@@ -2870,34 +2870,6 @@ diff -rupN ns-2.29/mobile/dumb-agent.h ns-2.29-click-scheduler/mobile/dumb-agent
  #include "agent.h"
  #include "ll.h"
  #include "trace.h"
-diff -rupN ns-2.29/mobile/god.h ns-2.29-click-scheduler/mobile/god.h
---- ns-2.29/mobile/god.h	2008-08-28 16:36:36.000000000 +0200
-+++ ns-2.29-click-scheduler/mobile/god.h	2007-03-08 15:12:37.000000000 +0100
-@@ -85,20 +85,20 @@ public:
- 		return sqrt(X*X + Y*Y + Z*Z);
- 	}
- 
--	inline void operator=(const vector a) {
-+	inline void vector::operator=(const vector a) {
- 		X = a.X;
- 		Y = a.Y;
- 		Z = a.Z;
- 	}
--	inline void operator+=(const vector a) {
-+	inline void vector::operator+=(const vector a) {
- 		X += a.X;
- 		Y += a.Y;
- 		Z += a.Z;
- 	}
--	inline int operator==(const vector a) {
-+	inline int vector::operator==(const vector a) {
- 		return (X == a.X && Y == a.Y && Z == a.Z);
- 	}
--	inline int operator!=(const vector a) {
-+	inline int vector::operator!=(const vector a) {
- 		return (X != a.X || Y != a.Y || Z != a.Z);
- 	}
- 	inline vector operator-(const vector a) {
 diff -rupN ns-2.29/pgm/pgm-agent.cc ns-2.29-click-scheduler/pgm/pgm-agent.cc
 --- ns-2.29/pgm/pgm-agent.cc	2008-08-28 16:36:36.000000000 +0200
 +++ ns-2.29-click-scheduler/pgm/pgm-agent.cc	2007-03-08 15:12:37.000000000 +0100
