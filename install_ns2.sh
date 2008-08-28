@@ -70,8 +70,8 @@ case "$key" in
 
 	download_and_unpack "http://www.isi.edu/nsnam/dist/ns-allinone-2.29.tar.gz" ns-allinone-2.29.tar.gz ns-allinone-2.29
 	
-	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-patch; patch -Np1 -i $dir/ns-2.29-scheduler.patch)
-	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-002-brnextra-patch)
+	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-patch)
+	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-scheduler.patch; patch -Np1 -i $dir/ns-2.29-002-brnextra-patch)
 	(cd /tmp/ns-allinone-2.29/nam-1.11; patch -Np1 -i $dir/ns-2.29-003-nam.patch)
 	(cd /tmp/ns-allinone-2.29/; patch -Np1 -i $dir/ns-2.29-004-installfile.patch)
 	(cd /tmp/ns-allinone-2.29; export CLICKPATH=$CLICKPATH; ./install)
