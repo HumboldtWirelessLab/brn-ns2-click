@@ -26,13 +26,13 @@ done
 download_and_unpack() {
   if [ ! -f /tmp/$2 ]; then
     (cd /tmp/; wget $1)
-
-    if [ -e /tmp/$3 ]; then
-      rm -rf /tmp/$3
-    fi
-    
-    (cd /tmp/; tar xvfz $2)
   fi
+  
+  if [ -e /tmp/$3 ]; then
+    rm -rf /tmp/$3
+  fi
+    
+  (cd /tmp/; tar xvfz $2)
 }
 
 create_dir() {
@@ -61,7 +61,7 @@ install_file() {
 
 clean_up() {
   rm -rf /tmp/$2
-  rm -f /tmp/$1
+#  rm -f /tmp/$1
 }
 
 case "$key" in
@@ -71,7 +71,7 @@ case "$key" in
 	download_and_unpack "http://www.isi.edu/nsnam/dist/ns-allinone-2.29.tar.gz" ns-allinone-2.29.tar.gz ns-allinone-2.29
 	
 	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-patch)
-	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-scheduler.patch; patch -Np1 -i $dir/ns-2.29-002-brnextra-patch)
+	(cd /tmp/ns-allinone-2.29/ns-2.29; patch -Np1 -i $dir/ns-2.29-scheduler.patch; patch -Np1 -i $dir/ns-2.29-002-brnextra.patch)
 	(cd /tmp/ns-allinone-2.29/nam-1.11; patch -Np1 -i $dir/ns-2.29-003-nam.patch)
 	(cd /tmp/ns-allinone-2.29/; patch -Np1 -i $dir/ns-2.29-004-installfile.patch)
 	(cd /tmp/ns-allinone-2.29; export CLICKPATH=$CLICKPATH; ./install)
