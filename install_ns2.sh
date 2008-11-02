@@ -116,6 +116,7 @@ case "$key" in
 	download_and_unpack "http://www.isi.edu/nsnam/dist/ns-allinone-2.30.tar.gz" ns-allinone-2.30.tar.gz ns-allinone-2.30
 
 	(cd /tmp/ns-allinone-2.30/ns-2.30; patch -Np1 -i $dir/ns-2.30-patch)
+	(cd /tmp/ns-allinone-2.30/ns-2.30; patch -Np1 -i $dir/ns-2.30-001-scheduler.patch)
 	(cd /tmp/ns-allinone-2.30/; patch -Np1 -i $dir/ns-2.30-002-installfile.patch)
 	(cd /tmp/ns-allinone-2.30; export CLICKPATH=$CLICKPATH; ./install)
 
