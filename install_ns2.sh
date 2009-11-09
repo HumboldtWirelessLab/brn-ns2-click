@@ -41,6 +41,8 @@ download_and_unpack() {
 create_dir() {
   if [ ! -e $1 ]; then
     mkdir $1
+  fi
+  if [ ! -e $1/bin ]; then
     mkdir $1/bin
   fi
 }
