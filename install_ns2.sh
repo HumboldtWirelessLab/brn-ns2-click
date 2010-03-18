@@ -12,19 +12,27 @@ if [ "x$CLICKPATH" = "x" ]; then
   exit 0
 fi
 
-key=0
-echo "(1) 2.29-brn (Scheduler-Patch,Brn-extra)"
-echo "(2) 2.29"
-echo "(3) 2.29.3"
-echo "(4) 2.30"
+if [ "x$VERSION" = "x" ]; then
+  VERSION=0
+fi
 
-while [ $key != "1" ] && [ $key != "2" ] && [ $key != "3" ] && [ $key != "4" ]; do
-  echo -n "Choose Version (1-4): "
-  read key
-  if [ "x$key" = "x" ]; then
-    key=0
-  fi
-done
+if [ $VERSION -eq 0 ]; then
+  key=0
+  echo "(1) 2.29-brn (Scheduler-Patch,Brn-extra)"
+  echo "(2) 2.29"
+  echo "(3) 2.29.3"
+  echo "(4) 2.30"
+
+  while [ $key != "1" ] && [ $key != "2" ] && [ $key != "3" ] && [ $key != "4" ]; do
+    echo -n "Choose Version (1-4): "
+    read key
+    if [ "x$key" = "x" ]; then
+      key=0
+    fi
+  done
+else
+  key=$VERSION
+fi
 
 download_and_unpack() {
   if [ ! -f /tmp/$2 ]; then
