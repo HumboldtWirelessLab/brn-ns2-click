@@ -64,13 +64,23 @@ install_file() {
   mv /tmp/$1/bin/tclsh8.4 $2/bin/
   mv /tmp/$1/bin/wish8.4 $2/bin/
 
-  if [ "$1" = "ns-allinone-2.29"  ]; then
+  case "$1" in
+  "ns-allinone-2.29")
     mv /tmp/ns-allinone-2.29/nam-1.11/nam $2/bin/
     mv /tmp/ns-allinone-2.29/ns-2.29/ns $2/bin/
-  else
+    ;;
+  "ns-allinone-2.30")
     mv /tmp/ns-allinone-2.30/nam-1.12/nam $2/bin/
     mv /tmp/ns-allinone-2.30/ns-2.30/ns $2/bin/
-  fi
+    ;;
+  "ns-allinone-2.34")
+    mv /tmp/ns-allinone-2.34/nam-1.14/nam $2/bin/
+    mv /tmp/ns-allinone-2.34/ns-2.34/ns $2/bin/
+    mv /tmp/ns-allinone-2.34/ns-2.34/nse $2/bin/
+    mv /tmp/ns-allinone-2.34/ns-2.34/nstk $2/bin/
+    ;;
+  esac
+  
 }
 
 clean_up() {
