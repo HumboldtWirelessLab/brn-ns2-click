@@ -1,0 +1,37 @@
+--- install-orig	2009-06-14 19:35:07.000000000 +0200
++++ install	2010-03-23 11:49:19.000000000 +0100
+@@ -214,6 +214,22 @@
+ # Get current path
+ CUR_PATH=`pwd`
+ 
++if [ "x$CLICKPATH" = "x" ]; then
++  echo "Please set CLICKPATH"
++  exit
++else
++  if [ -f $CLICKPATH/lib/libnsclick.so ]; then
++    echo "Found libnsclick.so"
++  else
++    if [ -f $CLICKPATH/ns/libnsclick.so ]; then
++      ln -s $CLICKPATH/ns/libnsclick.so $CLICKPATH/lib/libnsclick.so
++    else
++      echo "No libnsclick"
++      exit
++    fi
++  fi
++fi
++
+ echo "============================================================"
+ echo "* Testing for Darwin (OS X) environment"
+ echo "============================================================"
+@@ -546,9 +562,9 @@
+ fi
+ 
+ if  [ "${test_cygwin}" = "true" ]; then
+-        ./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include || die "Ns configuration failed! Exiting ...";
++        ./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+ else
+-        ./configure --with-otcl=../otcl-$OTCLVER --with-tclcl=../tclcl-$TCLCLVER || die "Ns configuration failed! Exiting ...";
++        ./configure --with-otcl=../otcl-$OTCLVER --with-tclcl=../tclcl-$TCLCLVER --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+ fi
+ 
+ if make

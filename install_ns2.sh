@@ -22,9 +22,10 @@ if [ $VERSION -eq 0 ]; then
   echo "(2) 2.29"
   echo "(3) 2.29.3"
   echo "(4) 2.30"
+  echo "(5) 2.34"
 
-  while [ $key != "1" ] && [ $key != "2" ] && [ $key != "3" ] && [ $key != "4" ]; do
-    echo -n "Choose Version (1-4): "
+  while [ $key != "1" ] && [ $key != "2" ] && [ $key != "3" ] && [ $key != "4" ] && [ $key != "5" ]; do
+    echo -n "Choose Version (1-5): "
     read key
     if [ "x$key" = "x" ]; then
       key=0
@@ -134,6 +135,20 @@ case "$key" in
 	install_file ns-allinone-2.30 $PREFIX
 	clean_up ns-allinone-2.30.tar.gz ns-allinone-2.30
 	;;
+    "5")
+	echo "Install ns-2.34"
+
+	download_and_unpack "http://downloads.sourceforge.net/project/nsnam/allinone/ns-allinone-2.34/ns-allinone-2.34.tar.gz?use_mirror=freefr" ns-allinone-2.34.tar.gz ns-allinone-2.34
+
+	(cd /tmp/ns-allinone-2.34/ns-2.34; patch -Np1 -i $dir/ns-2.34-patch)
+	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-001-installfile.patch)
+	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; ./install)
+
+	create_dir $PREFIX
+	install_file ns-allinone-2.34 $PREFIX
+	clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
+	;;
+	
 esac
 
 exit 0
