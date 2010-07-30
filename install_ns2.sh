@@ -155,6 +155,7 @@ case "$key" in
 	(cd /tmp/ns-allinone-2.34/ns-2.34; patch -Np1 -i $dir/ns-2.34-patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-001-installfile.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-002-installfile-prefix.patch)
+	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-003-gcc-stack-fix.patch)
 	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; ./install)
 	
 	create_dir $PREFIX
@@ -183,7 +184,7 @@ case "$key" in
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
 	
-	clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
+	#clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
 	;;
 	
 esac
