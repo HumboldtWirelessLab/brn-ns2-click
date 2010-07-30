@@ -76,7 +76,9 @@ install_file() {
   "ns-allinone-2.34")
     mv /tmp/ns-allinone-2.34/nam-1.14/nam $2/bin/
     mv /tmp/ns-allinone-2.34/ns-2.34/ns $2/bin/
-    mv /tmp/ns-allinone-2.34/ns-2.34/nse $2/bin/
+    if [ -e /tmp/ns-allinone-2.34/ns-2.34/nse ]; then
+      mv /tmp/ns-allinone-2.34/ns-2.34/nse $2/bin/
+    fi
     mv /tmp/ns-allinone-2.34/ns-2.34/nstk $2/bin/
     ;;
   esac
@@ -152,10 +154,35 @@ case "$key" in
 
 	(cd /tmp/ns-allinone-2.34/ns-2.34; patch -Np1 -i $dir/ns-2.34-patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-001-installfile.patch)
+	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-002-installfile-prefix.patch)
 	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; ./install)
-
+	
 	create_dir $PREFIX
 	install_file ns-allinone-2.34 $PREFIX
+
+	if [ "x$DEVELOP" = "x1" ]; then
+	  rm -rf /tmp/ns-allinone-2.34/bin
+	  rm -rf /tmp/ns-allinone-2.34/include
+	  rm -rf /tmp/ns-allinone-2.34/lib
+	  rm -rf /tmp/ns-allinone-2.34/man
+	  
+	  (cd /tmp/ns-allinone-2.34/tcl8.4.18/unix; make install; make install-private-headers)
+	  (cd /tmp/ns-allinone-2.34/tk8.4.18/unix; make install)
+	  (cd /tmp/ns-allinone-2.34/tclcl-1.19; make install)
+	  (cd /tmp/ns-allinone-2.34/otcl-1.13; make install)
+	  
+	  cp -r /tmp/ns-allinone-2.34/bin $PREFIX
+	  cp -r /tmp/ns-allinone-2.34/include $PREFIX
+	  cp -r /tmp/ns-allinone-2.34/lib $PREFIX
+	  cp -r /tmp/ns-allinone-2.34/man $PREFIX
+	  
+	  rm -f $PREFIX/lib/libotcl.so
+	  	  
+	  (cd $PREFIX/src/ns-2.34; ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make)
+	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
+	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
+	fi
+	
 	clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
 	;;
 	
