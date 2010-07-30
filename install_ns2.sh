@@ -183,6 +183,7 @@ case "$key" in
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
 	
+	ln -s $CLICKPATH/ns/libnsclick.so $PREFIX/lib/libnsclick.so
 	clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
 	;;
 	
