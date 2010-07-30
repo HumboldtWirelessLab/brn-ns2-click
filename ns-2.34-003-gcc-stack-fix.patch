@@ -1,0 +1,11 @@
+--- install.org	2010-07-30 16:49:46.000000000 +0200
++++ install	2010-07-30 17:15:17.000000000 +0200
+@@ -510,7 +510,7 @@
+ if  [ "${test_cygwin}" = "true" ]; then
+         ./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include || die "otcl-$OTCLVER configuration failed! Exiting ...";
+ else
+-        ./configure --prefix=$CUR_PATH || die "otcl-$OTCLVER configuration failed! Exiting ...";
++        CFLAGS="-fno-stack-protector" ./configure --prefix=$CUR_PATH || die "otcl-$OTCLVER configuration failed! Exiting ...";
+ fi
+ 
+ if make 
