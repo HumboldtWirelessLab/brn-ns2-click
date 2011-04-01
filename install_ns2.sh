@@ -37,7 +37,7 @@ fi
 
 download_and_unpack() {
   if [ ! -f /tmp/$2 ]; then
-    (cd /tmp/; wget $1)
+    (cd /tmp/; wget $1 -O $2)
   fi
   
   if [ -e /tmp/$3 ]; then
