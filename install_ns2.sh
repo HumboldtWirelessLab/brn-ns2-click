@@ -156,7 +156,7 @@ case "$key" in
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-001-installfile.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-002-installfile-prefix.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-003-gcc-stack-fix.patch)
-	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; ./install)
+	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; ./install)
 	
 	create_dir $PREFIX
 	install_file ns-allinone-2.34 $PREFIX
@@ -179,7 +179,7 @@ case "$key" in
 	  
 	  rm -f $PREFIX/lib/libotcl.so
 	  	  
-	  (cd $PREFIX/src/ns-2.34; ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make)
+	  (cd $PREFIX/src/ns-2.34; CFLAGS="-ltinyxml" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make)
 	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
