@@ -35,6 +35,10 @@ else
   key=$VERSION
 fi
 
+if [ "x$CPUS" = "x" ]; then
+  CPUS=2
+fi
+
 download_and_unpack() {
   if [ ! -f /tmp/$2 ]; then
     (cd /tmp/; wget $1 -O $2)
@@ -179,7 +183,7 @@ case "$key" in
 	  
 	  rm -f $PREFIX/lib/libotcl.so
 	  	  
-	  (cd $PREFIX/src/ns-2.34; CFLAGS="-ltinyxml" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make)
+	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; CFLAGS="-L$CLICKPATH/ns/lib -ltinyxml" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
 	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
