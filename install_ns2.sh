@@ -183,7 +183,7 @@ case "$key" in
 	  
 	  rm -f $PREFIX/lib/libotcl.so
 	  	  
-	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; CFLAGS="-L$CLICKPATH/ns/ -ltinyxml -stdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
+	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; CFLAGS="-L$CLICKPATH/ns/ -ltinyxml -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
 	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
