@@ -160,6 +160,7 @@ case "$key" in
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-001-installfile.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-002-installfile-prefix.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-003-gcc-stack-fix.patch)
+	(cd /tmp/ns-allinone-2.34/; patch -Np1 -i $dir/ns-2.34-patch-gcc-4.6.2)
 	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; ./install)
 	
 	create_dir $PREFIX
