@@ -12,6 +12,10 @@ if [ "x$CLICKPATH" = "x" ]; then
   exit 0
 fi
 
+if [ "x$CLEAN" = "x" ]; then
+  CLEAN=1
+fi
+
 if [ "x$VERSION" = "x" ]; then
   VERSION=0
 fi
@@ -190,7 +194,9 @@ case "$key" in
 	fi
 	
 	ln -s $CLICKPATH/ns/libnsclick.so $PREFIX/lib/libnsclick.so
-	clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
+	if [ $CLEAN -eq 1 ]; then
+	  clean_up ns-allinone-2.34.tar.gz ns-allinone-2.34
+	fi
 	;;
 	
 esac
