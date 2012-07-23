@@ -1,0 +1,117 @@
+--- install.org	2012-07-23 19:01:58.000000000 +0200
++++ install	2012-07-23 19:11:05.000000000 +0200
+@@ -230,6 +230,10 @@
+   fi
+ fi
+ 
++if [ "x$CPUS" = "x" ]; then
++  CPUS=1
++fi
++
+ echo "============================================================"
+ echo "* Testing for Darwin (OS X) environment"
+ echo "============================================================"
+@@ -261,13 +265,13 @@
+                 echo "Note: Cygwin install is still considered EXPERIMENTAL";
+                 echo "";
+                 cygwin_tests;
+-               
++
+                 echo "Patching Tcl/Tk for Cygwin.";
+                 if [ ! -f ./tcl${TCLVER}/generic/tcl.h.orig ]; then
+                         cp ./tcl${TCLVER}/generic/tcl.h ./tcl${TCLVER}/generic/tcl.h.orig;
+                         echo "The original tcl${TCLVER}/generic/tcl.h is backed up as tcl${TCLVER}/generic/tcl.h.orig";
+                         sed -e 's/\#define _TCL/\#define _TCL\`\`\#ifdef __CYGWIN__\`\#define HAVE_TM_ZONE 1\`\#endif \/\* __CYGWIN__ \*\//g' ./tcl${TCLVER}/generic/tcl.h.orig | tr '\`' '\n' > ./tcl${TCLVER}/generic/tcl.h;
+-			cp ./tk${TCLVER}/generic/default.h ./tk${TCLVER}/generic/default.h.orig;
++                        cp ./tk${TCLVER}/generic/default.h ./tk${TCLVER}/generic/default.h.orig;
+                         echo "The original tk${TKVER}/generic/default.h is backed up as tk${TKVER}/generic/default.h.orig";
+                         sed -e 's/defined(__CYGWIN__) || defined(__MINGW32__)/0/g' ./tk${TKVER}/generic/default.h.orig > ./tk${TKVER}/generic/default.h;
+                 fi;
+@@ -393,13 +397,13 @@
+     echo "and sgb2ns. But it will not affect you use ns, so continue ..."
+  else
+     cd ./gt-itm/src
+-    if make
++    if make -j $CPUS
+     then
+       echo "gt-itm has been installed successfully."
+     fi
+     
+     cd ../sgb2ns
+-    if make
++    if make -j $CPUS
+     then
+       echo "sgb2ns has been installed successfully."
+     fi
+@@ -419,7 +423,7 @@
+ 
+ if ./configure --exec-prefix=../ --prefix=../
+ then
+-	if make
++	if make -j $CPUS
+ 	then
+ 		echo "Zlib has been installed successfully."
+ 	else
+@@ -446,7 +450,7 @@
+ to see if they have a fix for your platform.'
+ autoconf
+ ./configure --enable-gcc --disable-shared --prefix=$CUR_PATH || die "tcl$TCLVER configuration failed! Exiting ..."
+-if make 
++if make -j $CPUS
+ then 
+ 	echo "tcl$TCLVER make succeeded."
+ 	make install || die "tcl$TCLVER installation failed."
+@@ -475,7 +479,7 @@
+ to see if they have a fix for your platform.'
+ autoconf
+ ./configure --enable-gcc --disable-shared --prefix=$CUR_PATH || die "tk$TKVER configuration failed! Exiting ..."
+-if make 
++if make -j $CPUS
+ then
+ 	echo "tk$TKVER build succeeded."
+ 	make install || die "tk$TKVER installation failed."
+@@ -513,7 +517,7 @@
+         CFLAGS="-fno-stack-protector" ./configure --prefix=$CUR_PATH || die "otcl-$OTCLVER configuration failed! Exiting ...";
+ fi
+ 
+-if make 
++if make -j $CPUS
+ then
+ 	echo "otcl-$OTCLVER has been installed successfully."
+ else
+@@ -538,7 +542,7 @@
+         ./configure --prefix=$CUR_PATH --with-otcl=../otcl-$OTCLVER || die "tclcl-$TCLCLVER configuration failed! Exiting ..."
+ fi
+ 
+-if make
++if make -j $CPUS
+ then
+ 	echo "tclcl-$TCLCLVER has been installed successfully."
+ else
+@@ -569,7 +573,7 @@
+         ./configure --with-otcl=../otcl-$OTCLVER --with-tclcl=../tclcl-$TCLCLVER --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+   fi
+ 
+-  if make
++  if make -j $CPUS
+   then
+     echo " Ns has been installed successfully." 
+   else
+@@ -603,7 +607,7 @@
+         ./configure --with-otcl=../otcl-$OTCLVER --with-tclcl=../tclcl-$TCLCLVER || die "Nam configuration failed! Exiting ...";
+ fi
+ 
+-if make
++if make -j $CPUS
+ then 
+     echo "Nam has been installed successfully."
+ elif  [ "${test_darwin}" = "true" ]; then
+@@ -631,7 +635,7 @@
+ cd ./dei80211mr-${DEI80211MRVER}
+ 
+ ./configure --with-ns-allinone=${CUR_PATH} --prefix=${CUR_PATH} \
+-    && make \
++    && make -j $CPUS \
+     && make install
+ 
+ cd ..

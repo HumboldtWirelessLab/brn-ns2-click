@@ -1,0 +1,49 @@
+--- install.org	2012-07-23 18:51:29.000000000 +0200
++++ install	2012-07-23 19:01:58.000000000 +0200
+@@ -556,27 +556,30 @@
+ echo "* Build ns-$NSVER"
+ echo "============================================================"
+ 
+-cd ./ns-$NSVER
+-if [ -f Makefile ] ; then 
+-	make distclean
+-fi
+ 
+-if  [ "${test_cygwin}" = "true" ]; then
++if [ "x$ENABLE_NSBUILD" = "x" ]; then
++  cd ./ns-$NSVER
++  if [ -f Makefile ] ; then 
++    make distclean
++  fi
++
++  if  [ "${test_cygwin}" = "true" ]; then
+         ./configure --x-libraries=/usr/X11R6/lib --x-includes=/usr/X11R6/include --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+-else
++  else
+         ./configure --with-otcl=../otcl-$OTCLVER --with-tclcl=../tclcl-$TCLCLVER --with-click=$CLICKPATH || die "Ns configuration failed! Exiting ...";
+-fi
++  fi
+ 
+-if make
+-then
+-	echo " Ns has been installed successfully." 
+-else
+-	echo "Ns make failed!"
+-	echo "See http://www.isi.edu/nsnam/ns/ns-problems.html for problems"
+-	exit
+-fi
++  if make
++  then
++    echo " Ns has been installed successfully." 
++  else
++    echo "Ns make failed!"
++    echo "See http://www.isi.edu/nsnam/ns/ns-problems.html for problems"
++    exit
++  fi
+ 
+-cd ../
++  cd ../
++fi
+ 
+ # Build nam
+ 

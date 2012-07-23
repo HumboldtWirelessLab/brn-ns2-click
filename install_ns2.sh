@@ -20,6 +20,10 @@ if [ "x$VERSION" = "x" ]; then
   VERSION=0
 fi
 
+if [ "x$CPUS" = "x" ]; then
+  CPUS=1
+fi
+
 if [ $VERSION -eq 0 ]; then
   key=0
   echo "(1) 2.29-brn (Scheduler-Patch,Brn-extra)"
@@ -164,6 +168,8 @@ case "$key" in
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-001-installfile.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-002-installfile-prefix.patch)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-003-gcc-stack-fix.patch)
+	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-004-disable-nsbuild.patch)
+	(cd /tmp/ns-allinone-2.34/; patch -Np0 -i $dir/ns-2.34-005-multicpu.patchs)
 	(cd /tmp/ns-allinone-2.34/; patch -Np0 -R -i $dir/ns-2.34-patch-gcc-4.6.2)
 	(cd /tmp/ns-allinone-2.34; export CLICKPATH=$CLICKPATH; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; ./install)
 	
