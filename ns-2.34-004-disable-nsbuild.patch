@@ -10,7 +10,7 @@
 -fi
  
 -if  [ "${test_cygwin}" = "true" ]; then
-+if [ "x$ENABLE_NSBUILD" = "x" ]; then
++if [ "x$ENABLE_NSBUILD" = "x1" ]; then
 +  cd ./ns-$NSVER
 +  if [ -f Makefile ] ; then 
 +    make distclean
