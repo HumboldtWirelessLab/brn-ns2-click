@@ -44,14 +44,18 @@ else
 fi
 
 if [ "x$CPUS" = "x" ]; then
-  CPUS=2
+  if [ -f /proc/cpuinfo ]; then
+    CPUS=`grep -e "^processor" /proc/cpuinfo | wc -l`
+  else
+    CPUS=2
+  fi
 fi
 
 download_and_unpack() {
   if [ ! -f /tmp/$2 ]; then
     (cd /tmp/; wget $1 -O $2)
   fi
-  
+
   if [ -e /tmp/$3 ]; then
     rm -rf /tmp/$3
   fi
