@@ -75,7 +75,7 @@
  fi
  
 -if make 
-+if make -j $CPUS
++if make -j 1
  then
  	echo "otcl-$OTCLVER has been installed successfully."
  else
