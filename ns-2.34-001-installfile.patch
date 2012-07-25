@@ -14,7 +14,7 @@
 +    if [ -f $CLICKPATH/ns/libnsclick.so ]; then
 +      ln -s $CLICKPATH/ns/libnsclick.so $CLICKPATH/lib/libnsclick.so
 +    else
-+      echo "No libnsclick"
++      echo "No libnsclick in CLICKPATH: $CLICKPATH /ns /lib"
 +      exit
 +    fi
 +  fi
