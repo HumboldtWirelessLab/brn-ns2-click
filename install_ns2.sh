@@ -185,7 +185,7 @@ case "$key" in
 	  rm -rf /tmp/ns-allinone-2.34/include
 	  rm -rf /tmp/ns-allinone-2.34/lib
 	  rm -rf /tmp/ns-allinone-2.34/man
-	  
+
 	  (cd /tmp/ns-allinone-2.34/tcl8.4.18/unix; make install; make install-private-headers)
 	  (cd /tmp/ns-allinone-2.34/tk8.4.18/unix; make install)
 	  (cd /tmp/ns-allinone-2.34/tclcl-1.19; make install)
@@ -195,10 +195,10 @@ case "$key" in
 	  cp -r /tmp/ns-allinone-2.34/include $PREFIX
 	  cp -r /tmp/ns-allinone-2.34/lib $PREFIX
 	  cp -r /tmp/ns-allinone-2.34/man $PREFIX
-	  
+
 	  rm -f $PREFIX/lib/libotcl.so
-	  	  
-	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; CFLAGS="-L$CLICKPATH/ns/ -lstdc++ $XCFLAGS" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
+
+	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CLICKPATH/ns; CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$CLICKPATH/ns/ -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
 	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
