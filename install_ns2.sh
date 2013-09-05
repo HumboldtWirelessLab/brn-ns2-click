@@ -198,7 +198,7 @@ case "$key" in
 
 	  rm -f $PREFIX/lib/libotcl.so
 
-	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/; CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$PREFIX/lib/ -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
+	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/; CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$PREFIX/lib/ -L$CLICKPATH/ns/ -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX  --with-otcl=$PREFIX; make -j $CPUS)
 	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
