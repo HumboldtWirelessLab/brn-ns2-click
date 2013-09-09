@@ -190,10 +190,13 @@ case "$key" in
 	  (cd /tmp/ns-allinone-2.34/tk8.4.18/unix; make install)
 	  (cd /tmp/ns-allinone-2.34/tclcl-1.19; make install)
 	  (cd /tmp/ns-allinone-2.34/otcl-1.13; make install)
-	  
+
 	  cp -r /tmp/ns-allinone-2.34/bin $PREFIX
 	  cp -r /tmp/ns-allinone-2.34/include $PREFIX
 	  cp -r /tmp/ns-allinone-2.34/lib $PREFIX
+	  if [ -e /tmp/ns-allinone-2.34/lib64/ ]; then
+	      cp -r /tmp/ns-allinone-2.34/lib64/* $PREFIX/lib
+	  fi
 	  cp -r /tmp/ns-allinone-2.34/man $PREFIX
 
 	  rm -f $PREFIX/lib/libotcl.so
