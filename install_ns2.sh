@@ -203,7 +203,8 @@ case "$key" in
 
 	  XCFLAGS="$XCFLAGS -I$CLICKPATH -I$CLICKPATH/include"
 
-	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/; CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$PREFIX/lib/ -L$CLICKPATH/ns/ -L$BRN_TOOLS_PATH/click-brn-libs/lib -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX --with-otcl=$PREFIX; make -j $CPUS)
+	  CLICKLINKERCONFIG=`(cd $CLICKPATH; make linkerconfig -f ns/Makefile`
+	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/; CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$PREFIX/lib/ -L$CLICKPATH/ns/ $CLICKLINKERCONFIG -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX --with-otcl=$PREFIX; make -j $CPUS)
 	  (mv $PREFIX/bin/ns $PREFIX/bin/ns.old)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
