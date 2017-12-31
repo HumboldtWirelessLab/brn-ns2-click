@@ -205,9 +205,9 @@ case "$key" in
 
 	  CLICKLINKERCONFIG=`(cd $CLICKPATH/ns; make linkerconfig)`
 	  echo "$CLICKLINKERCONFIG"
-	  echo "(cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/:$BRN_TOOLS_PATH/click-brn-libs/lib; CPP="g++ -std=gnu++0x" CFLAGS=\"$XCFLAGS\" CPPFLAGS=\"$XCFLAGS\" CXXFLAGS=\"$XCFLAGS\" LDFLAGS=\"$XCFLAGS\" LIBS=\"-L$PREFIX/lib/ -L$CLICKPATH/ns/ -L$BRN_TOOLS_PATH/click-brn-libs/lib $CLICKLINKERCONFIG -lstdc++\" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX --with-otcl=$PREFIX; make -j $CPUS)"
+	  echo "(cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/:$BRN_TOOLS_PATH/click-brn-libs/lib; CXX="g++ -std=gnu++0x" CFLAGS=\"$XCFLAGS\" CPPFLAGS=\"$XCFLAGS\" CXXFLAGS=\"$XCFLAGS\" LDFLAGS=\"$XCFLAGS\" LIBS=\"-L$PREFIX/lib/ -L$CLICKPATH/ns/ -L$BRN_TOOLS_PATH/click-brn-libs/lib $CLICKLINKERCONFIG -lstdc++\" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX --with-otcl=$PREFIX; make -j $CPUS)"
 
-	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/:$BRN_TOOLS_PATH/click-brn-libs/lib; CPP="g++ -std=gnu++0x" CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$PREFIX/lib/ -L$CLICKPATH/ns/ -L$BRN_TOOLS_PATH/click-brn-libs/lib $CLICKLINKERCONFIG -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX --with-otcl=$PREFIX; make -j $CPUS)
+	  (cd $PREFIX/src/ns-2.34; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib/:$CLICKPATH/ns/:$BRN_TOOLS_PATH/click-brn-libs/lib; CXX="g++ -std=gnu++0x" CFLAGS="$XCFLAGS" CPPFLAGS="$XCFLAGS" CXXFLAGS="$XCFLAGS" LDFLAGS="$XCFLAGS" LIBS="-L$PREFIX/lib/ -L$CLICKPATH/ns/ -L$BRN_TOOLS_PATH/click-brn-libs/lib $CLICKLINKERCONFIG -lstdc++" ./configure --prefix=$PREFIX --with-click=$CLICKPATH --with-tcl=$PREFIX --with-tclcl=$PREFIX --with-tk=$PREFIX --with-otcl=$PREFIX; make -j $CPUS)
 	  (if [ -f $PREFIX/bin/ns ]; then mv $PREFIX/bin/ns $PREFIX/bin/ns.old; fi)
 	  ln -s $PREFIX/src/ns-2.34/ns $PREFIX/bin/ns
 	fi
